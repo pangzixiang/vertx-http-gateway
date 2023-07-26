@@ -9,6 +9,7 @@
 
     <artifactId>vertx-http-gateway-common</artifactId>
     <name>vertx-http-gateway-common</name>
+    <description>Load-Balancing HTTP Gateway for Vert.x</description>
     <version>1.0.1-SNAPSHOT</version>
     <url>https://github.com/pangzixiang/vertx-http-gateway</url>
 
@@ -22,7 +23,7 @@
 
     <licenses>
         <license>
-            <name>APACHE LICENSE, VERSION 2.0</name>
+            <name>Apache 2.0 License</name>
             <url>https://www.apache.org/licenses/LICENSE-2.0</url>
         </license>
     </licenses>

@@ -7,6 +7,7 @@
     <name>vertx-http-gateway-parent</name>
     <packaging>pom</packaging>
     <version>1.0.1-SNAPSHOT</version>
+    <description>Load-Balancing HTTP Gateway for Vert.x</description>
     <url>https://github.com/pangzixiang/vertx-http-gateway</url>
 
     <developers>
@@ -19,7 +20,7 @@
 
     <licenses>
         <license>
-            <name>APACHE LICENSE, VERSION 2.0</name>
+            <name>Apache 2.0 License</name>
             <url>https://www.apache.org/licenses/LICENSE-2.0</url>
         </license>
     </licenses>
