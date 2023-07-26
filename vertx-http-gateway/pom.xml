@@ -4,7 +4,7 @@
     <parent>
         <groupId>io.github.pangzixiang.whatsit</groupId>
         <artifactId>vertx-http-gateway-parent</artifactId>
-        <version>1.0.2-SNAPSHOT</version>
+        <version>1.0.1-SNAPSHOT</version>
     </parent>
 
     <artifactId>vertx-http-gateway</artifactId>
@@ -36,7 +36,7 @@
         <dependency>
             <groupId>io.github.pangzixiang.whatsit</groupId>
             <artifactId>vertx-http-gateway-common</artifactId>
-            <version>1.0.2-SNAPSHOT</version>
+            <version>1.0.1-SNAPSHOT</version>
         </dependency>
     </dependencies>
 
@@ -55,6 +55,5 @@
         <url>https://github.com/pangzixiang/vertx-http-gateway.git</url>
         <developerConnection>scm:git:https://github.com/pangzixiang/vertx-http-gateway</developerConnection>
         <connection>scm:git:https://github.com/pangzixiang/vertx-http-gateway</connection>
-      <tag>HEAD</tag>
-  </scm>
+    </scm>
 </project>
