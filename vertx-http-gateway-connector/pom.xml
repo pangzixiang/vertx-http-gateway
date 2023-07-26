@@ -4,7 +4,7 @@
     <parent>
         <groupId>io.github.pangzixiang.whatsit</groupId>
         <artifactId>vertx-http-gateway-parent</artifactId>
-        <version>1.0.2-SNAPSHOT</version>
+        <version>1.0.1-SNAPSHOT</version>
     </parent>
 
     <artifactId>vertx-http-gateway-connector</artifactId>
@@ -19,7 +19,7 @@
         <dependency>
             <groupId>io.github.pangzixiang.whatsit</groupId>
             <artifactId>vertx-http-gateway-common</artifactId>
-            <version>1.0.2-SNAPSHOT</version>
+            <version>1.0.1-SNAPSHOT</version>
         </dependency>
     </dependencies>
 </project>
