@@ -9,6 +9,7 @@
 
     <artifactId>vertx-http-gateway-connector</artifactId>
     <name>vertx-http-gateway-connector</name>
+    <version>1.0.1-SNAPSHOT</version>
     <url>https://github.com/pangzixiang/vertx-http-gateway</url>
 
     <developers>
