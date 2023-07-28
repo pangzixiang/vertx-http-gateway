@@ -33,13 +33,12 @@ class VertxHttpGatewayConnectorHandler extends AbstractVerticle implements Handl
 
     @Override
     public void handle(WebSocket webSocket) {
-        webSocket.pause();
-        webSocket.fetch(1);
         webSocket.handler(buffer -> {
             MessageChunk messageChunk = new MessageChunk(buffer);
             byte chunkType = messageChunk.getChunkType();
             byte requestId = messageChunk.getRequestId();
             if (chunkType == MessageChunkType.INFO.getFlag()) {
+                webSocket.pause();
                 String requestChunkBody = messageChunk.getChunkBody().toString();
                 RequestMessageInfoChunkBody requestMessageInfoChunkBody = new RequestMessageInfoChunkBody(requestChunkBody);
                 HttpMethod httpMethod = requestMessageInfoChunkBody.getHttpMethod();
@@ -64,12 +63,15 @@ class VertxHttpGatewayConnectorHandler extends AbstractVerticle implements Handl
                         if (type == MessageChunkType.CLOSED.getFlag()) {
                             httpClientRequest.connection().close();
                         }
-                        webSocket.fetch(1);
                     });
 
-                    consumer.completionHandler(unused -> webSocket.fetch(1));
+                    consumer.completionHandler(unused -> webSocket.resume());
 
-                    httpClientRequest.connection().closeHandler(unused -> consumer.unregister());
+                    httpClientRequest.connection().closeHandler(unused -> {
+                        if (consumer.isRegistered()) {
+                            consumer.unregister();
+                        }
+                    });
 
                     httpClientRequest.response().onSuccess(httpClientResponse -> {
                         Buffer firstChunk = MessageChunk.build(MessageChunkType.INFO, requestId, buildFirstResponseChunkBody(httpClientResponse));
@@ -91,6 +93,7 @@ class VertxHttpGatewayConnectorHandler extends AbstractVerticle implements Handl
                     log.error("Failed to send request for {} {}:{}{}", httpMethod, vertxHttpGatewayConnectorOptions.getServiceHost(),
                             vertxHttpGatewayConnectorOptions.getServicePort(), uri, throwable);
                     webSocket.writeBinaryMessage(MessageChunk.build(MessageChunkType.ERROR, requestId, throwable.getMessage()));
+                    webSocket.resume();
                 });
             } else {
                 getVertx().eventBus().send(getProxyRequestEventbusAddress(requestId), buffer);
