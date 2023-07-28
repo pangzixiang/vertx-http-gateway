@@ -4,6 +4,8 @@ import io.github.pangzixiang.whatsit.vertx.http.gateway.common.MessageChunk;
 import io.github.pangzixiang.whatsit.vertx.http.gateway.common.MessageChunkType;
 import io.github.pangzixiang.whatsit.vertx.http.gateway.common.RequestMessageInfoChunkBody;
 import io.github.pangzixiang.whatsit.vertx.http.gateway.common.ResponseMessageInfoChunkBody;
+import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
@@ -52,35 +54,40 @@ class ProxyServerHandler extends AbstractVerticle implements Handler<RoutingCont
                     if (Objects.equals(chunkType, MessageChunkType.INFO.getFlag())) {
                         String responseInfoChunkBody = messageChunk.getChunkBody().toString();
                         ResponseMessageInfoChunkBody responseMessageInfoChunkBody = new ResponseMessageInfoChunkBody(responseInfoChunkBody);
-                        routingContext.request().response().setStatusCode(responseMessageInfoChunkBody.getStatusCode()).setStatusMessage(responseMessageInfoChunkBody.getStatusMessage());
+                        routingContext.response().setStatusCode(responseMessageInfoChunkBody.getStatusCode()).setStatusMessage(responseMessageInfoChunkBody.getStatusMessage());
                         // set response headers
-                        routingContext.request().response().headers().addAll(responseMessageInfoChunkBody.getHeaders());
+                        routingContext.response().headers().addAll(responseMessageInfoChunkBody.getHeaders());
+
+                        if (Objects.equals(responseMessageInfoChunkBody.getHeaders().get(HttpHeaderNames.TRANSFER_ENCODING), HttpHeaderValues.CHUNKED.toString())) {
+                            routingContext.response().setChunked(true);
+                        }
                     }
 
                     if (Objects.equals(chunkType, MessageChunkType.BODY.getFlag())) {
-                        routingContext.request().response().send(messageChunk.getChunkBody());
+                        routingContext.response().write(messageChunk.getChunkBody());
                     }
 
                     if (Objects.equals(chunkType, MessageChunkType.ERROR.getFlag())) {
                         log.info("Failed to proxy request [{} {}] from {} to {}:{} in instance [{}] (requestId={}) due to {}", routingContext.request().method(), routingContext.request().uri(), routingContext.request().remoteAddress(),
                                 serviceRegistrationInstance.getRemoteAddress(), serviceRegistrationInstance.getRemotePort(), serviceRegistrationInstance.getInstanceId(), requestId, messageChunk.getChunkBody());
-                        routingContext.request().response().setStatusCode(HttpResponseStatus.BAD_GATEWAY.code()).end("Failed to proxy request due to target server error (requestId=%s)".formatted(requestId));
+                        routingContext.response().setStatusCode(HttpResponseStatus.BAD_GATEWAY.code()).end("Failed to proxy request due to target server error (requestId=%s)".formatted(requestId));
                     }
 
                     if (Objects.equals(chunkType, MessageChunkType.ENDING.getFlag())) {
-                        routingContext.request().response().end();
+                        routingContext.response().end();
                         log.info("Succeeded to proxy request [{} {}] from {} to {}:{} in instance [{}] (requestId={})", routingContext.request().method(), routingContext.request().uri(), routingContext.request().remoteAddress(),
                                 serviceRegistrationInstance.getRemoteAddress(), serviceRegistrationInstance.getRemotePort(), serviceRegistrationInstance.getInstanceId(), requestId);
                     }
                 });
 
                 long timeoutChecker = getVertx().setTimer(vertxHttpGatewayOptions.getProxyTimeout(), l -> {
-                    if (!routingContext.request().response().ended() && !routingContext.request().response().isChunked() && routingContext.request().response().bytesWritten() == 0) {
+                    if (!routingContext.response().ended() && !routingContext.response().isChunked() && routingContext.response().bytesWritten() == 0) {
                         routingContext.fail(HttpResponseStatus.GATEWAY_TIMEOUT.code());
                     }
                 });
 
-                routingContext.request().response().endHandler(unused -> {
+                routingContext.response().endHandler(unused -> {
+                    getVertx().eventBus().send(serviceRegistrationInstance.getEventBusAddress(), MessageChunk.build(MessageChunkType.CLOSED, requestId));
                     getVertx().cancelTimer(timeoutChecker);
                     requestConsumer.unregister();
                 });

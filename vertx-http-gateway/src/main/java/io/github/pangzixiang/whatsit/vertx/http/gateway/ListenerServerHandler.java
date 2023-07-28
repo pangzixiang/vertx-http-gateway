@@ -1,14 +1,12 @@
 package io.github.pangzixiang.whatsit.vertx.http.gateway;
 
 import io.github.pangzixiang.whatsit.vertx.http.gateway.common.MessageChunk;
-import io.github.pangzixiang.whatsit.vertx.http.gateway.common.MessageChunkType;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.eventbus.MessageConsumer;
-import io.vertx.core.http.WebSocketFrame;
 import io.vertx.ext.web.RoutingContext;
 import lombok.extern.slf4j.Slf4j;
 
@@ -28,26 +26,15 @@ class ListenerServerHandler extends AbstractVerticle implements Handler<RoutingC
                     .build();
 
             this.addConnector(serviceName, serviceRegistrationInstance).onSuccess(unused -> {
-                serverWebSocket.frameHandler(frame -> {
-                    Buffer chunk = frame.binaryData();
-                    MessageChunk messageChunk = new MessageChunk(chunk);
+                serverWebSocket.handler(buffer -> {
+                    MessageChunk messageChunk = new MessageChunk(buffer);
                     byte requestId = messageChunk.getRequestId();
-                    getVertx().eventBus().send(ProxyServerHandler.getProxyRequestEventBusAddress(requestId), chunk);
+                    getVertx().eventBus().send(ProxyServerHandler.getProxyRequestEventBusAddress(requestId), buffer);
                 });
 
                 MessageConsumer<Object> messageConsumer = getVertx().eventBus().consumer(serviceRegistrationInstance.getEventBusAddress()).handler(msg -> {
                     Buffer chunk = (Buffer) msg.body();
-                    MessageChunk messageChunk = new MessageChunk(chunk);
-                    byte chunkType = messageChunk.getChunkType();
-                    if (chunkType == MessageChunkType.INFO.getFlag()) {
-                        serverWebSocket.writeFrame(WebSocketFrame.binaryFrame(chunk, false));
-                    }
-                    if (chunkType == MessageChunkType.BODY.getFlag()) {
-                        serverWebSocket.writeFrame(WebSocketFrame.continuationFrame(chunk, false));
-                    }
-                    if (chunkType == MessageChunkType.ENDING.getFlag()) {
-                        serverWebSocket.writeFrame(WebSocketFrame.continuationFrame(chunk, true));
-                    }
+                    serverWebSocket.writeBinaryMessage(chunk);
                 });
 
                 serverWebSocket.closeHandler(unused2 -> {
@@ -65,6 +52,7 @@ class ListenerServerHandler extends AbstractVerticle implements Handler<RoutingC
             ServiceRegistrationInfo serviceRegistrationInfo = (ServiceRegistrationInfo) GatewayUtils.getConnectorInfoMap(getVertx()).getOrDefault(serviceName, ServiceRegistrationInfo.builder().basePath("/" + serviceName).build());
             serviceRegistrationInfo.addTargetServer(serviceRegistrationInstance);
             GatewayUtils.getConnectorInfoMap(getVertx()).putIfAbsent(serviceName, serviceRegistrationInfo);
+            log.info("New instance registered [{}]", serviceRegistrationInstance);
             lock.release();
         }).onFailure(throwable -> log.error("Failed to get Lock to add connector info", throwable)).mapEmpty();
     }
