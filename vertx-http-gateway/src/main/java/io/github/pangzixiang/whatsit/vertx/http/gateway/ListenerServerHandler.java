@@ -52,6 +52,7 @@ class ListenerServerHandler extends AbstractVerticle implements Handler<RoutingC
             ServiceRegistrationInfo serviceRegistrationInfo = (ServiceRegistrationInfo) GatewayUtils.getConnectorInfoMap(getVertx()).getOrDefault(serviceName, ServiceRegistrationInfo.builder().basePath("/" + serviceName).build());
             serviceRegistrationInfo.addTargetServer(serviceRegistrationInstance);
             GatewayUtils.getConnectorInfoMap(getVertx()).putIfAbsent(serviceName, serviceRegistrationInfo);
+            log.info("New instance registered [{}]", serviceRegistrationInstance);
             lock.release();
         }).onFailure(throwable -> log.error("Failed to get Lock to add connector info", throwable)).mapEmpty();
     }
