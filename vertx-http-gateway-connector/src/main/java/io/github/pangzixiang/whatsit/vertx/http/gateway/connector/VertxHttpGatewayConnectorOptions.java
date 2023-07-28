@@ -15,6 +15,8 @@ public class VertxHttpGatewayConnectorOptions {
     private HttpClientOptions proxyClientOptions;
     private int instance;
 
+    private static final HttpClientOptions DEFAULT_PROXY_CLIENT_OPTIONS = new HttpClientOptions();
+
     public VertxHttpGatewayConnectorOptions(String serviceName, int servicePort, String listenerServerHost, int listenerServerPort, String serviceHost, String listenerServerRegisterPath, HttpClientOptions registerClientOptions, HttpClientOptions proxyClientOptions, int instance) {
         this.serviceName = serviceName;
         this.servicePort = servicePort;
@@ -28,7 +30,7 @@ public class VertxHttpGatewayConnectorOptions {
     }
 
     public VertxHttpGatewayConnectorOptions(String serviceName, int servicePort, String listenerServerHost, int listenerServerPort) {
-        this(serviceName, servicePort, listenerServerHost, listenerServerPort, "localhost", "/register?serviceName=" + serviceName + "&servicePort=" + servicePort, new HttpClientOptions(), new HttpClientOptions(), 2);
+        this(serviceName, servicePort, listenerServerHost, listenerServerPort, "localhost", "/register?serviceName=" + serviceName + "&servicePort=" + servicePort, new HttpClientOptions(), DEFAULT_PROXY_CLIENT_OPTIONS, 2);
     }
 
     public VertxHttpGatewayConnectorOptions setServiceHost(String serviceHost) {
@@ -48,6 +50,11 @@ public class VertxHttpGatewayConnectorOptions {
 
     public VertxHttpGatewayConnectorOptions setRegisterClientOptions(HttpClientOptions registerClientOptions) {
         this.registerClientOptions = registerClientOptions;
+        return this;
+    }
+
+    public VertxHttpGatewayConnectorOptions setInstance(int instance) {
+        this.instance = instance;
         return this;
     }
 }

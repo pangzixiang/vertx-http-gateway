@@ -7,6 +7,7 @@ public enum MessageChunkType {
     INFO((byte) 0),
     BODY((byte) 1),
     ENDING((byte) 2),
+    CLOSED((byte) 3),
     ERROR((byte) -2);
 
     private final byte flag;

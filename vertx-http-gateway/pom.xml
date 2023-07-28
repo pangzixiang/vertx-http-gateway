@@ -40,6 +40,12 @@
             <artifactId>vertx-http-gateway-common</artifactId>
             <version>1.0.2-SNAPSHOT</version>
         </dependency>
+        <dependency>
+            <groupId>io.github.pangzixiang.whatsit</groupId>
+            <artifactId>vertx-http-gateway-connector</artifactId>
+            <version>1.0.2-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <distributionManagement>

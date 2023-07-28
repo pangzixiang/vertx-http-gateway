@@ -1,7 +1,7 @@
 on:
   push:
     tags:
-      - 'vertx-http-gateway-*'
+      - 'v*'
 
 name: Create GitHub Release
 

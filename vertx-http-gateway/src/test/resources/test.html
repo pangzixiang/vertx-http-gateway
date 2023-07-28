@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test</title>
+    <script type="application/javascript">
+        fetch("/test-service/a").then(res => {
+            document.getElementById("a").innerText = res.status + " " + res.statusText
+            return res.text()
+        }).then(text => document.getElementById("a").innerText += " " + text)
+    </script>
+    <script type="application/javascript">
+        const es = new EventSource("/test-service/sse");
+        es.addEventListener("message", (e) => {
+            document.getElementById("sse").innerHTML += "<p>" + e.data + "</p>"
+        })
+    </script>
+</head>
+<body>
+<div>
+    <p>test</p>
+    <p id="a"></p>
+    <div id="sse"></div>
+</div>
+</body>
+</html>
