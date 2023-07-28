@@ -1,6 +1,11 @@
 # vertx-http-gateway
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.pangzixiang.whatsit/vertx-http-gateway?logo=apachemaven&logoColor=red)](https://search.maven.org/artifact/io.github.pangzixiang.whatsit/vertx-http-gateway)
-#### how to use
+### How does it work?
+![ConnectionFlow](./ConnectionFlow.jpg)
+- Once requester send the request to Gateway, Gateway would transfer the request to the Connector via Websocket.
+- Connector and the Target Service are in the same JVM, hence Target server doesn't need to open its PORT.
+- Once Connector receives the request from Gateway, it would trigger the HTTP request to the Target Service and transfer back the response to Gateway.
+### How to use it?
 - Import the dependency
 ```xml
 <dependency>
