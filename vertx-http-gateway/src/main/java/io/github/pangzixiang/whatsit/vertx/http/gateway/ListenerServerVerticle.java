@@ -16,7 +16,7 @@ class ListenerServerVerticle extends AbstractVerticle {
     public void start(Promise<Void> startPromise) throws Exception {
         Router router = Router.router(getVertx());
 
-        ListenerServerHandler listenerServerHandler = new ListenerServerHandler();
+        ListenerServerHandler listenerServerHandler = new ListenerServerHandler(vertxHttpGatewayOptions.getEventHandler());
 
         Future<String> deployFuture = getVertx().deployVerticle(listenerServerHandler);
 
