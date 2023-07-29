@@ -6,7 +6,7 @@
     <artifactId>vertx-http-gateway-parent</artifactId>
     <name>vertx-http-gateway-parent</name>
     <packaging>pom</packaging>
-    <version>1.0.5-SNAPSHOT</version>
+    <version>1.0.5</version>
     <description>Load-Balancing HTTP Gateway for Vert.x</description>
     <url>https://github.com/pangzixiang/vertx-http-gateway</url>
 
@@ -226,7 +226,7 @@
         <url>https://github.com/pangzixiang/vertx-http-gateway.git</url>
         <developerConnection>scm:git:https://github.com/pangzixiang/vertx-http-gateway</developerConnection>
         <connection>scm:git:https://github.com/pangzixiang/vertx-http-gateway</connection>
-      <tag>HEAD</tag>
+      <tag>v1.0.5</tag>
   </scm>
 
 </project>
