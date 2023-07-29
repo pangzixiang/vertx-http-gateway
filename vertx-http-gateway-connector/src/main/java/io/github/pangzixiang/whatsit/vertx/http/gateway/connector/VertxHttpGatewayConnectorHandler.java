@@ -36,7 +36,7 @@ class VertxHttpGatewayConnectorHandler extends AbstractVerticle implements Handl
         webSocket.handler(buffer -> {
             MessageChunk messageChunk = new MessageChunk(buffer);
             byte chunkType = messageChunk.getChunkType();
-            byte requestId = messageChunk.getRequestId();
+            long requestId = messageChunk.getRequestId();
             if (chunkType == MessageChunkType.INFO.getFlag()) {
                 webSocket.pause();
                 String requestChunkBody = messageChunk.getChunkBody().toString();
@@ -108,7 +108,7 @@ class VertxHttpGatewayConnectorHandler extends AbstractVerticle implements Handl
         return ResponseMessageInfoChunkBody.build(statusMessage, statusCode, responseHeaders);
     }
 
-    private String getProxyRequestEventbusAddress(byte requestId) {
+    private String getProxyRequestEventbusAddress(long requestId) {
         return instanceId + "." + "proxy-request." + requestId;
     }
 }
