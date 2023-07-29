@@ -2,11 +2,15 @@ package io.github.pangzixiang.whatsit.vertx.http.gateway;
 
 import io.github.pangzixiang.whatsit.vertx.http.gateway.connector.VertxHttpGatewayConnector;
 import io.github.pangzixiang.whatsit.vertx.http.gateway.connector.VertxHttpGatewayConnectorOptions;
+import io.github.pangzixiang.whatsit.vertx.http.gateway.handler.EventHandler;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaderValues;
+import io.vertx.core.Future;
 import io.vertx.core.Vertx;
+import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.Router;
+import io.vertx.ext.web.RoutingContext;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.charset.StandardCharsets;
@@ -15,12 +19,50 @@ import java.nio.charset.StandardCharsets;
 public class LocalDevTest {
     public static void main(String[] args) {
         Vertx vertx = Vertx.vertx();
-        vertx.deployVerticle(new VertxHttpGatewayMainVerticle());
+        VertxHttpGatewayOptions vertxHttpGatewayOptions = new VertxHttpGatewayOptions();
+        vertxHttpGatewayOptions.setEventHandler(new EventHandler() {
+            @Override
+            public Future<Void> beforeEstablishConnection(RoutingContext routingContext) {
+                log.info("beforeEstablishConnection");
+                return Future.succeededFuture();
+            }
+
+            @Override
+            public Future<Void> afterEstablishConnection(String serviceName, ServiceRegistrationInstance serviceRegistrationInstance) {
+                log.info("afterEstablishConnection");
+                return Future.succeededFuture();
+            }
+
+            @Override
+            public Future<Void> beforeRemoveConnection(String serviceName, ServiceRegistrationInstance serviceRegistrationInstance) {
+                log.info("beforeRemoveConnection");
+                return Future.succeededFuture();
+            }
+
+            @Override
+            public Future<Void> afterRemoveConnection(String serviceName, ServiceRegistrationInstance serviceRegistrationInstance) {
+                log.info("afterRemoveConnection");
+                return Future.succeededFuture();
+            }
+
+            @Override
+            public Future<Void> beforeProxyRequest(long requestId, HttpServerRequest httpServerRequest, ServiceRegistrationInstance serviceRegistrationInstance) {
+                log.info("beforeProxyRequest");
+                return Future.succeededFuture();
+            }
+
+            @Override
+            public Future<Void> afterProxyRequest(long requestId, HttpServerRequest httpServerRequest, ServiceRegistrationInstance serviceRegistrationInstance) {
+                log.info("afterProxyRequest");
+                return Future.succeededFuture();
+            }
+        });
+        vertx.deployVerticle(new VertxHttpGatewayMainVerticle(vertxHttpGatewayOptions));
 
         Router router = Router.router(vertx);
 
         router.get("/test-service/a").handler(rc -> {
-            log.debug(rc.request().headers().toString());
+//            log.debug(rc.request().headers().toString());
             rc.response().end("a");
         });
 
@@ -53,7 +95,13 @@ public class LocalDevTest {
                     log.info("Test Service started at {}", httpServer.actualPort());
                     VertxHttpGatewayConnectorOptions vertxHttpGatewayConnectorOptions =
                             new VertxHttpGatewayConnectorOptions("test-service", httpServer.actualPort(), "localhost", 9090);
-                    new VertxHttpGatewayConnector(vertx, vertxHttpGatewayConnectorOptions).connect();
+                    VertxHttpGatewayConnector vertxHttpGatewayConnector = new VertxHttpGatewayConnector(vertx, vertxHttpGatewayConnectorOptions);
+                    vertxHttpGatewayConnector.connect();
+
+                    vertx.setTimer(5000, l -> {
+                       vertxHttpGatewayConnector.close();
+                    });
+
                 }).onFailure(throwable -> log.error(throwable.getMessage(), throwable));
     }
 }

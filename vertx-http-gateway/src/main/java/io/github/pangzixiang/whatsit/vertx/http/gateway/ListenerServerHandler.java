@@ -1,49 +1,57 @@
 package io.github.pangzixiang.whatsit.vertx.http.gateway;
 
 import io.github.pangzixiang.whatsit.vertx.http.gateway.common.MessageChunk;
-import io.netty.handler.codec.http.HttpResponseStatus;
+import io.github.pangzixiang.whatsit.vertx.http.gateway.handler.EventHandler;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.ext.web.RoutingContext;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@AllArgsConstructor
 class ListenerServerHandler extends AbstractVerticle implements Handler<RoutingContext> {
+
+    private final EventHandler eventHandler;
+
     @Override
     public void handle(RoutingContext routingContext) {
-        routingContext.request().toWebSocket().onSuccess(serverWebSocket -> {
-            String serviceName = routingContext.queryParams().get("serviceName");
-            String servicePort = routingContext.queryParams().get("servicePort");
-            String instance = routingContext.queryParams().get("instance");
+        eventHandler.beforeEstablishConnection(routingContext).onSuccess(v -> {
+            routingContext.request().toWebSocket().onSuccess(serverWebSocket -> {
+                String serviceName = routingContext.queryParams().get("serviceName");
+                String servicePort = routingContext.queryParams().get("servicePort");
+                String instance = routingContext.queryParams().get("instance");
 
-            ServiceRegistrationInstance serviceRegistrationInstance = ServiceRegistrationInstance.builder()
-                    .remoteAddress(serverWebSocket.remoteAddress().hostAddress())
-                    .remotePort(servicePort)
-                    .instanceId(instance)
-                    .build();
+                ServiceRegistrationInstance serviceRegistrationInstance = ServiceRegistrationInstance.builder()
+                        .remoteAddress(serverWebSocket.remoteAddress().hostAddress())
+                        .remotePort(servicePort)
+                        .instanceId(instance)
+                        .build();
 
-            this.addConnector(serviceName, serviceRegistrationInstance).onSuccess(unused -> {
-                serverWebSocket.handler(buffer -> {
-                    MessageChunk messageChunk = new MessageChunk(buffer);
-                    long requestId = messageChunk.getRequestId();
-                    getVertx().eventBus().send(ProxyServerHandler.getProxyRequestEventBusAddress(requestId), buffer);
-                });
+                this.addConnector(serviceName, serviceRegistrationInstance).onFailure(throwable -> serverWebSocket.reject())
+                        .compose(unused -> eventHandler.afterEstablishConnection(serviceName, serviceRegistrationInstance)).onSuccess(unused -> {
+                            serverWebSocket.handler(buffer -> {
+                                MessageChunk messageChunk = new MessageChunk(buffer);
+                                long requestId = messageChunk.getRequestId();
+                                getVertx().eventBus().send(ProxyServerHandler.getProxyRequestEventBusAddress(requestId), buffer);
+                            });
 
-                MessageConsumer<Object> messageConsumer = getVertx().eventBus().consumer(serviceRegistrationInstance.getEventBusAddress()).handler(msg -> {
-                    Buffer chunk = (Buffer) msg.body();
-                    serverWebSocket.writeBinaryMessage(chunk);
-                });
+                            MessageConsumer<Object> messageConsumer = getVertx().eventBus().consumer(serviceRegistrationInstance.getEventBusAddress()).handler(msg -> {
+                                Buffer chunk = (Buffer) msg.body();
+                                serverWebSocket.writeBinaryMessage(chunk);
+                            });
 
-                serverWebSocket.closeHandler(unused2 -> {
-                    messageConsumer.unregister();
-                    this.removeConnector(serviceName, serviceRegistrationInstance);
-                });
-            }).onFailure(throwable -> serverWebSocket.reject());
-        }).onFailure(throwable -> {
-            routingContext.fail(HttpResponseStatus.BAD_REQUEST.code());
+                            serverWebSocket.closeHandler(unused2 -> {
+                                eventHandler.beforeRemoveConnection(serviceName, serviceRegistrationInstance).onComplete(unused3 -> {
+                                    messageConsumer.unregister();
+                                    this.removeConnector(serviceName, serviceRegistrationInstance).compose(unused4 -> eventHandler.afterRemoveConnection(serviceName, serviceRegistrationInstance));
+                                });
+                            });
+                        });
+            }).onFailure(routingContext::fail);
         });
     }
 
