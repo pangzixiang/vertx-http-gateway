@@ -7,44 +7,44 @@ import lombok.Getter;
 @Getter
 public class MessageChunk {
     private final byte chunkType;
-    private final byte requestId;
+    private final long requestId;
     private final Buffer chunkBody;
 
     public MessageChunk(Buffer chunk) {
         this.chunkType = chunk.getByte(0);
-        this.requestId = chunk.getByte(1);
-        this.chunkBody = chunk.getBuffer(2, chunk.length());
+        this.requestId = chunk.getLong(1);
+        this.chunkBody = chunk.getBuffer(9, chunk.length());
     }
 
-    public static Buffer build(byte chunkType, byte requestId, Buffer chunkBody) {
+    public static Buffer build(byte chunkType, Long requestId, Buffer chunkBody) {
         return Buffer.buffer()
                 .appendByte(chunkType)
-                .appendByte(requestId)
+                .appendLong(requestId)
                 .appendBuffer(chunkBody);
     }
 
-    public static Buffer build(byte chunkType, byte requestId, String chunkBody) {
+    public static Buffer build(byte chunkType, Long requestId, String chunkBody) {
         return Buffer.buffer()
                 .appendByte(chunkType)
-                .appendByte(requestId)
+                .appendLong(requestId)
                 .appendString(chunkBody);
     }
 
-    public static Buffer build(byte chunkType, byte requestId) {
+    public static Buffer build(byte chunkType, Long requestId) {
         return Buffer.buffer()
                 .appendByte(chunkType)
-                .appendByte(requestId);
+                .appendLong(requestId);
     }
 
-    public static Buffer build(MessageChunkType chunkType, byte requestId, Buffer chunkBody) {
+    public static Buffer build(MessageChunkType chunkType, Long requestId, Buffer chunkBody) {
         return build(chunkType.getFlag(), requestId, chunkBody);
     }
 
-    public static Buffer build(MessageChunkType chunkType, byte requestId, String chunkBody) {
+    public static Buffer build(MessageChunkType chunkType, Long requestId, String chunkBody) {
         return build(chunkType.getFlag(), requestId, chunkBody);
     }
 
-    public static Buffer build(MessageChunkType chunkType, byte requestId) {
+    public static Buffer build(MessageChunkType chunkType, Long requestId) {
         return build(chunkType.getFlag(), requestId);
     }
 }

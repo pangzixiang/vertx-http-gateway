@@ -28,7 +28,7 @@ class ListenerServerHandler extends AbstractVerticle implements Handler<RoutingC
             this.addConnector(serviceName, serviceRegistrationInstance).onSuccess(unused -> {
                 serverWebSocket.handler(buffer -> {
                     MessageChunk messageChunk = new MessageChunk(buffer);
-                    byte requestId = messageChunk.getRequestId();
+                    long requestId = messageChunk.getRequestId();
                     getVertx().eventBus().send(ProxyServerHandler.getProxyRequestEventBusAddress(requestId), buffer);
                 });
 
@@ -52,7 +52,7 @@ class ListenerServerHandler extends AbstractVerticle implements Handler<RoutingC
             ServiceRegistrationInfo serviceRegistrationInfo = (ServiceRegistrationInfo) GatewayUtils.getConnectorInfoMap(getVertx()).getOrDefault(serviceName, ServiceRegistrationInfo.builder().basePath("/" + serviceName).build());
             serviceRegistrationInfo.addTargetServer(serviceRegistrationInstance);
             GatewayUtils.getConnectorInfoMap(getVertx()).putIfAbsent(serviceName, serviceRegistrationInfo);
-            log.info("New instance registered [{}]", serviceRegistrationInstance);
+            log.info("New instance for [{}] registered [{}]", serviceName, serviceRegistrationInstance);
             lock.release();
         }).onFailure(throwable -> log.error("Failed to get Lock to add connector info", throwable)).mapEmpty();
     }
