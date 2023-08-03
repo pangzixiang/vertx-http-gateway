@@ -111,7 +111,7 @@ class ProxyServerHandler extends AbstractVerticle implements Handler<RoutingCont
                             Buffer endChunk = MessageChunk.build(MessageChunkType.ENDING, requestId);
                             getVertx().eventBus().send(serviceRegistrationInstance.getEventBusAddress(), endChunk);
                         });
-                    });
+                    }).onFailure(routingContext::fail);
                 }).onFailure(routingContext::fail);
             }).onFailure(routingContext::fail);
         } else {
