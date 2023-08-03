@@ -1,5 +1,6 @@
 package io.github.pangzixiang.whatsit.vertx.http.gateway;
 
+import io.github.pangzixiang.whatsit.vertx.http.gateway.handler.EventHandler;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -13,12 +14,18 @@ import lombok.extern.slf4j.Slf4j;
 class ProxyServerVerticle extends AbstractVerticle {
 
     private final VertxHttpGatewayOptions vertxHttpGatewayOptions;
+    private final EventHandler eventHandler;
+    private final Router customRouter;
 
     @Override
     public void start(Promise<Void> startPromise) throws Exception {
         Router router = Router.router(getVertx());
 
-        ProxyServerHandler proxyServerHandler = new ProxyServerHandler(vertxHttpGatewayOptions);
+        if (customRouter != null) {
+            router.route().subRouter(customRouter);
+        }
+
+        ProxyServerHandler proxyServerHandler = new ProxyServerHandler(vertxHttpGatewayOptions, eventHandler);
         Future<String> deployVerticle = getVertx().deployVerticle(proxyServerHandler);
 
         router.route("/:base*").handler(proxyServerHandler);

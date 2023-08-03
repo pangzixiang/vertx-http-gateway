@@ -10,6 +10,11 @@ public class ResponseMessageInfoChunkBody {
     private final String statusMessage;
     private final int statusCode;
     private final MultiMap headers = MultiMap.caseInsensitiveMultiMap();
+
+    /**
+     * 200 OK
+     * [headers]
+     */
     public ResponseMessageInfoChunkBody(String responseInfoChunkBody) {
         String[] chunkLines = responseInfoChunkBody.split(System.lineSeparator());
         String[] firstLine = chunkLines[0].split(" ");

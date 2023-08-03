@@ -14,8 +14,7 @@ import lombok.Getter;
  * </p>
  * <p>
  * === response chunk body ===
- * OK
- * 200
+ * 200 OK
  * Content-Type: application/json
  * [other headers]
  * </p>

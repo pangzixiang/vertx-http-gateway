@@ -3,6 +3,8 @@ package io.github.pangzixiang.whatsit.vertx.http.gateway.connector;
 import io.vertx.core.http.HttpClientOptions;
 import lombok.Getter;
 
+import java.util.concurrent.TimeUnit;
+
 @Getter
 public class VertxHttpGatewayConnectorOptions {
     private final String listenerServerHost;
@@ -14,10 +16,11 @@ public class VertxHttpGatewayConnectorOptions {
     private HttpClientOptions registerClientOptions;
     private HttpClientOptions proxyClientOptions;
     private int instance;
+    private long connectionRetryIntervalInMillis;
 
     private static final HttpClientOptions DEFAULT_PROXY_CLIENT_OPTIONS = new HttpClientOptions();
 
-    public VertxHttpGatewayConnectorOptions(String serviceName, int servicePort, String listenerServerHost, int listenerServerPort, String serviceHost, String listenerServerRegisterPath, HttpClientOptions registerClientOptions, HttpClientOptions proxyClientOptions, int instance) {
+    public VertxHttpGatewayConnectorOptions(String serviceName, int servicePort, String listenerServerHost, int listenerServerPort, String serviceHost, String listenerServerRegisterPath, HttpClientOptions registerClientOptions, HttpClientOptions proxyClientOptions, int instance, long connectionRetryIntervalInMillis) {
         this.serviceName = serviceName;
         this.servicePort = servicePort;
         this.listenerServerHost = listenerServerHost;
@@ -27,10 +30,11 @@ public class VertxHttpGatewayConnectorOptions {
         this.registerClientOptions = registerClientOptions;
         this.proxyClientOptions = proxyClientOptions;
         this.instance = instance;
+        this.connectionRetryIntervalInMillis = connectionRetryIntervalInMillis;
     }
 
     public VertxHttpGatewayConnectorOptions(String serviceName, int servicePort, String listenerServerHost, int listenerServerPort) {
-        this(serviceName, servicePort, listenerServerHost, listenerServerPort, "localhost", "/register?serviceName=" + serviceName + "&servicePort=" + servicePort, new HttpClientOptions(), DEFAULT_PROXY_CLIENT_OPTIONS, 2);
+        this(serviceName, servicePort, listenerServerHost, listenerServerPort, "localhost", "/register?serviceName=" + serviceName + "&servicePort=" + servicePort, new HttpClientOptions(), DEFAULT_PROXY_CLIENT_OPTIONS, 2, TimeUnit.SECONDS.toMillis(2));
     }
 
     public VertxHttpGatewayConnectorOptions setServiceHost(String serviceHost) {
@@ -55,6 +59,11 @@ public class VertxHttpGatewayConnectorOptions {
 
     public VertxHttpGatewayConnectorOptions setInstance(int instance) {
         this.instance = instance;
+        return this;
+    }
+
+    public VertxHttpGatewayConnectorOptions setConnectionRetryIntervalInMillis(long connectionRetryIntervalInMillis) {
+        this.connectionRetryIntervalInMillis = connectionRetryIntervalInMillis;
         return this;
     }
 }

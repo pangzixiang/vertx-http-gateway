@@ -16,35 +16,29 @@ public class MessageChunk {
         this.chunkBody = chunk.getBuffer(9, chunk.length());
     }
 
-    public static Buffer build(byte chunkType, Long requestId, Buffer chunkBody) {
-        return Buffer.buffer()
-                .appendByte(chunkType)
-                .appendLong(requestId)
-                .appendBuffer(chunkBody);
+    private static Buffer build(byte chunkType, long requestId, Buffer chunkBody) {
+        Buffer result = Buffer.buffer();
+        result.appendByte(chunkType).appendLong(requestId);
+        if (chunkBody != null && chunkBody.length() > 0) {
+            result.appendBuffer(chunkBody);
+        }
+
+        return result;
     }
 
-    public static Buffer build(byte chunkType, Long requestId, String chunkBody) {
-        return Buffer.buffer()
-                .appendByte(chunkType)
-                .appendLong(requestId)
-                .appendString(chunkBody);
+    private static Buffer build(byte chunkType, long requestId) {
+        return build(chunkType, requestId, null);
     }
 
-    public static Buffer build(byte chunkType, Long requestId) {
-        return Buffer.buffer()
-                .appendByte(chunkType)
-                .appendLong(requestId);
-    }
-
-    public static Buffer build(MessageChunkType chunkType, Long requestId, Buffer chunkBody) {
+    public static Buffer build(MessageChunkType chunkType, long requestId, Buffer chunkBody) {
         return build(chunkType.getFlag(), requestId, chunkBody);
     }
 
-    public static Buffer build(MessageChunkType chunkType, Long requestId, String chunkBody) {
-        return build(chunkType.getFlag(), requestId, chunkBody);
+    public static Buffer build(MessageChunkType chunkType, long requestId, String chunkBody) {
+        return build(chunkType.getFlag(), requestId, Buffer.buffer(chunkBody));
     }
 
-    public static Buffer build(MessageChunkType chunkType, Long requestId) {
+    public static Buffer build(MessageChunkType chunkType, long requestId) {
         return build(chunkType.getFlag(), requestId);
     }
 }

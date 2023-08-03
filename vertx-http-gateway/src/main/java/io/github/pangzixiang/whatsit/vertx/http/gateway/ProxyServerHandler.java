@@ -30,9 +30,9 @@ class ProxyServerHandler extends AbstractVerticle implements Handler<RoutingCont
     private final VertxHttpGatewayOptions vertxHttpGatewayOptions;
     private final EventHandler eventHandler;
 
-    ProxyServerHandler(VertxHttpGatewayOptions vertxHttpGatewayOptions) {
+    ProxyServerHandler(VertxHttpGatewayOptions vertxHttpGatewayOptions, EventHandler eventHandler) {
         this.vertxHttpGatewayOptions = vertxHttpGatewayOptions;
-        this.eventHandler = vertxHttpGatewayOptions.getEventHandler();
+        this.eventHandler = eventHandler;
     }
 
     @Override
