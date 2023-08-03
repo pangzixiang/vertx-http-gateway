@@ -46,6 +46,9 @@ class VertxHttpGatewayConnectorHandler extends AbstractVerticle implements Handl
 
                 proxyClient.request(httpMethod, vertxHttpGatewayConnectorOptions.getServicePort(), vertxHttpGatewayConnectorOptions.getServiceHost(), uri).onSuccess(httpClientRequest -> {
 
+                    httpClientRequest.exceptionHandler(throwable -> {
+//                        log.error(throwable.getMessage(), throwable);
+                    });
                     httpClientRequest.headers().addAll(requestMessageInfoChunkBody.getHeaders());
 
                     MessageConsumer<Object> consumer = getVertx().eventBus().consumer(getProxyRequestEventbusAddress(requestId)).handler(message -> {
@@ -61,7 +64,7 @@ class VertxHttpGatewayConnectorHandler extends AbstractVerticle implements Handl
                         }
 
                         if (type == MessageChunkType.CLOSED.getFlag()) {
-                            httpClientRequest.connection().close();
+                            httpClientRequest.connection().shutdown(0L);
                         }
                     });
 

@@ -2,6 +2,7 @@ package io.github.pangzixiang.whatsit.vertx.http.gateway;
 
 import io.github.pangzixiang.whatsit.vertx.http.gateway.algorithm.LoadBalanceAlgorithm;
 import io.github.pangzixiang.whatsit.vertx.http.gateway.algorithm.RoundRobin;
+import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.shareddata.Shareable;
 import lombok.Getter;
 
@@ -16,6 +17,8 @@ public class VertxHttpGatewayOptions implements Shareable {
     private String listenerServerRegisterPath;
     private LoadBalanceAlgorithm loadBalanceAlgorithm;
     private long proxyTimeout;
+    private HttpServerOptions listenerServerOptions;
+    private HttpServerOptions proxyServerOptions;
 
     public VertxHttpGatewayOptions() {
         this.proxyServerPort = 8080;
@@ -25,6 +28,8 @@ public class VertxHttpGatewayOptions implements Shareable {
         this.listenerServerRegisterPath = "/register";
         this.loadBalanceAlgorithm = new RoundRobin();
         this.proxyTimeout = TimeUnit.SECONDS.toMillis(15);
+        this.listenerServerOptions = new HttpServerOptions();
+        this.proxyServerOptions = new HttpServerOptions();
     }
 
     public VertxHttpGatewayOptions setProxyServerPort(int proxyServerPort) {
@@ -59,6 +64,16 @@ public class VertxHttpGatewayOptions implements Shareable {
 
     public VertxHttpGatewayOptions setProxyTimeout(int proxyTimeout) {
         this.proxyTimeout = proxyTimeout;
+        return this;
+    }
+
+    public VertxHttpGatewayOptions setListenerServerOptions(HttpServerOptions listenerServerOptions) {
+        this.listenerServerOptions = listenerServerOptions;
+        return this;
+    }
+
+    public VertxHttpGatewayOptions setProxyServerOptions(HttpServerOptions proxyServerOptions) {
+        this.proxyServerOptions = proxyServerOptions;
         return this;
     }
 }

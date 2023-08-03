@@ -30,7 +30,7 @@ class ProxyServerVerticle extends AbstractVerticle {
 
         router.route("/:base*").handler(proxyServerHandler);
 
-        Future<HttpServer> httpServerFuture = getVertx().createHttpServer()
+        Future<HttpServer> httpServerFuture = getVertx().createHttpServer(vertxHttpGatewayOptions.getProxyServerOptions())
                 .requestHandler(router)
                 .listen(vertxHttpGatewayOptions.getProxyServerPort())
                 .onSuccess(httpServer -> {
