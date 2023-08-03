@@ -61,7 +61,8 @@ class VertxHttpGatewayConnectorHandler extends AbstractVerticle implements Handl
                         }
 
                         if (type == MessageChunkType.CLOSED.getFlag()) {
-                            httpClientRequest.connection().close();
+                            // gracefully close the request connection
+                            httpClientRequest.connection().shutdown(500L);
                         }
                     });
 

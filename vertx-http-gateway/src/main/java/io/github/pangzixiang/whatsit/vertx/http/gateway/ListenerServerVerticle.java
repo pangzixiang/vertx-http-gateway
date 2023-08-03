@@ -24,7 +24,7 @@ class ListenerServerVerticle extends AbstractVerticle {
 
         router.route(vertxHttpGatewayOptions.getListenerServerRegisterPath()).handler(listenerServerHandler);
 
-        Future<HttpServer> httpServerFuture = getVertx().createHttpServer()
+        Future<HttpServer> httpServerFuture = getVertx().createHttpServer(vertxHttpGatewayOptions.getListenerServerOptions())
                 .requestHandler(router)
                 .listen(vertxHttpGatewayOptions.getListenerServerPort())
                 .onSuccess(httpServer -> log.info("Listener Server Started at {}", httpServer.actualPort()))
