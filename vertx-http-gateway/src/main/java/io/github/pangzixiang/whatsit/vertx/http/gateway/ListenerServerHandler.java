@@ -10,6 +10,7 @@ import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.ext.web.RoutingContext;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 @Slf4j
 @AllArgsConstructor
@@ -24,6 +25,11 @@ class ListenerServerHandler extends AbstractVerticle implements Handler<RoutingC
                 String serviceName = routingContext.queryParams().get("serviceName");
                 String servicePort = routingContext.queryParams().get("servicePort");
                 String instance = routingContext.queryParams().get("instance");
+
+                if (StringUtils.isAnyEmpty(serviceName, servicePort, instance)) {
+                    serverWebSocket.reject();
+                    return;
+                }
 
                 ServiceRegistrationInstance serviceRegistrationInstance = ServiceRegistrationInstance.builder()
                         .remoteAddress(serverWebSocket.remoteAddress().hostAddress())

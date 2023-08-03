@@ -1,24 +1,45 @@
 package io.github.pangzixiang.whatsit.vertx.http.gateway;
 
+import io.github.pangzixiang.whatsit.vertx.http.gateway.handler.DefaultEventHandler;
+import io.github.pangzixiang.whatsit.vertx.http.gateway.handler.EventHandler;
 import io.vertx.core.*;
-import lombok.AllArgsConstructor;
+import io.vertx.ext.web.Router;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@AllArgsConstructor
 public class VertxHttpGatewayMainVerticle extends AbstractVerticle {
 
     private final VertxHttpGatewayOptions vertxHttpGatewayOptions;
 
+    private EventHandler eventHandler;
+
+    private Router customRouter;
+
+    public VertxHttpGatewayMainVerticle(VertxHttpGatewayOptions vertxHttpGatewayOptions) {
+        this.vertxHttpGatewayOptions = vertxHttpGatewayOptions;
+        this.eventHandler = new DefaultEventHandler();
+        this.customRouter = null;
+    }
+
     public VertxHttpGatewayMainVerticle() {
-        this.vertxHttpGatewayOptions = new VertxHttpGatewayOptions();
+        this(new VertxHttpGatewayOptions());
+    }
+
+    public VertxHttpGatewayMainVerticle withEventHandler(EventHandler eventHandler) {
+        this.eventHandler = eventHandler;
+        return this;
+    }
+
+    public VertxHttpGatewayMainVerticle withCustomRouter(Router customRouter) {
+        this.customRouter = customRouter;
+        return this;
     }
 
     @Override
     public void start(Promise<Void> startPromise) throws Exception {
-        Future<String> listenerServerFuture = getVertx().deployVerticle(() -> new ListenerServerVerticle(vertxHttpGatewayOptions),
+        Future<String> listenerServerFuture = getVertx().deployVerticle(() -> new ListenerServerVerticle(vertxHttpGatewayOptions, eventHandler),
                 new DeploymentOptions().setInstances(vertxHttpGatewayOptions.getListenerServerInstance()));
-        Future<String> proxyServerFuture = getVertx().deployVerticle(() -> new ProxyServerVerticle(vertxHttpGatewayOptions),
+        Future<String> proxyServerFuture = getVertx().deployVerticle(() -> new ProxyServerVerticle(vertxHttpGatewayOptions, eventHandler, customRouter),
                 new DeploymentOptions().setInstances(vertxHttpGatewayOptions.getProxyServerInstance()));
 
         Future.all(listenerServerFuture, proxyServerFuture).onSuccess(unused -> startPromise.complete()).onFailure(startPromise::fail);

@@ -1,5 +1,6 @@
 package io.github.pangzixiang.whatsit.vertx.http.gateway;
 
+import io.github.pangzixiang.whatsit.vertx.http.gateway.handler.EventHandler;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -12,11 +13,12 @@ import lombok.extern.slf4j.Slf4j;
 @AllArgsConstructor
 class ListenerServerVerticle extends AbstractVerticle {
     private final VertxHttpGatewayOptions vertxHttpGatewayOptions;
+    private final EventHandler eventHandler;
     @Override
     public void start(Promise<Void> startPromise) throws Exception {
         Router router = Router.router(getVertx());
 
-        ListenerServerHandler listenerServerHandler = new ListenerServerHandler(vertxHttpGatewayOptions.getEventHandler());
+        ListenerServerHandler listenerServerHandler = new ListenerServerHandler(eventHandler);
 
         Future<String> deployFuture = getVertx().deployVerticle(listenerServerHandler);
 

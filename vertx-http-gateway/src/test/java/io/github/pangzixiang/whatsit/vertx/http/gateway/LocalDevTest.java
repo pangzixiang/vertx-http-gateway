@@ -20,7 +20,16 @@ public class LocalDevTest {
     public static void main(String[] args) {
         Vertx vertx = Vertx.vertx();
         VertxHttpGatewayOptions vertxHttpGatewayOptions = new VertxHttpGatewayOptions();
-        vertxHttpGatewayOptions.setEventHandler(new EventHandler() {
+        Router customRouter = Router.router(vertx);
+        customRouter.route("/test").handler(rc -> rc.response().end("test"));
+        customRouter.route().failureHandler(rc -> {
+           if (rc.statusCode() == 404) {
+               rc.response().setStatusCode(rc.statusCode()).end("<h1>Oops! NOT FOUND!</h1>");
+           } else {
+               rc.next();
+           }
+        });
+        vertx.deployVerticle(new VertxHttpGatewayMainVerticle(vertxHttpGatewayOptions).withCustomRouter(customRouter).withEventHandler(new EventHandler() {
             @Override
             public Future<Void> beforeEstablishConnection(RoutingContext routingContext) {
                 log.info("beforeEstablishConnection");
@@ -56,8 +65,7 @@ public class LocalDevTest {
                 log.info("afterProxyRequest");
                 return Future.succeededFuture();
             }
-        });
-        vertx.deployVerticle(new VertxHttpGatewayMainVerticle(vertxHttpGatewayOptions));
+        }));
 
         Router router = Router.router(vertx);
 
@@ -98,9 +106,9 @@ public class LocalDevTest {
                     VertxHttpGatewayConnector vertxHttpGatewayConnector = new VertxHttpGatewayConnector(vertx, vertxHttpGatewayConnectorOptions);
                     vertxHttpGatewayConnector.connect();
 
-                    vertx.setTimer(5000, l -> {
-                       vertxHttpGatewayConnector.close();
-                    });
+//                    vertx.setTimer(5000, l -> {
+//                       vertxHttpGatewayConnector.close();
+//                    });
 
                 }).onFailure(throwable -> log.error(throwable.getMessage(), throwable));
     }

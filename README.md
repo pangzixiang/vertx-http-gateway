@@ -44,6 +44,75 @@ public class Main {
 }
 ```
 
+- customize the Events
+```java
+public class YourEventHandler implements EventHandler {
+    @Override
+    public Future<Void> beforeEstablishConnection(RoutingContext routingContext) {
+        log.info("beforeEstablishConnection");
+        return Future.succeededFuture();
+    }
+
+    @Override
+    public Future<Void> afterEstablishConnection(String serviceName, ServiceRegistrationInstance serviceRegistrationInstance) {
+        log.info("afterEstablishConnection");
+        return Future.succeededFuture();
+    }
+
+    @Override
+    public Future<Void> beforeRemoveConnection(String serviceName, ServiceRegistrationInstance serviceRegistrationInstance) {
+        log.info("beforeRemoveConnection");
+        return Future.succeededFuture();
+    }
+
+    @Override
+    public Future<Void> afterRemoveConnection(String serviceName, ServiceRegistrationInstance serviceRegistrationInstance) {
+        log.info("afterRemoveConnection");
+        return Future.succeededFuture();
+    }
+
+    @Override
+    public Future<Void> beforeProxyRequest(long requestId, HttpServerRequest httpServerRequest, ServiceRegistrationInstance serviceRegistrationInstance) {
+        log.info("beforeProxyRequest");
+        return Future.succeededFuture();
+    }
+
+    @Override
+    public Future<Void> afterProxyRequest(long requestId, HttpServerRequest httpServerRequest, ServiceRegistrationInstance serviceRegistrationInstance) {
+        log.info("afterProxyRequest");
+        return Future.succeededFuture();
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Vertx vertx = Vertx.vertx();
+        VertxHttpGatewayOptions options = new VertxHttpGatewayOptions();
+        options.setLoadBalanceAlgorithm(new YourAlgorithm());
+        vertx.deployVerticle(new VertxHttpGatewayMainVerticle(options).withEventHandler(new YourEventHandler()));
+    }
+}
+```
+
+- Customize router
+```java
+public class Main {
+    public static void main(String[] args) {
+        Vertx vertx = Vertx.vertx();
+        Router customRouter = Router.router(vertx);
+        customRouter.route("/test").handler(rc -> rc.response().end("test"));
+        customRouter.route().failureHandler(rc -> {
+            if (rc.statusCode() == 404) {
+                rc.response().setStatusCode(rc.statusCode()).end("<h1>Oops! NOT FOUND!</h1>");
+            } else {
+                rc.next();
+            }
+        });
+        vertx.deployVerticle(new VertxHttpGatewayMainVerticle(options).withCustomRouter(customRouter));
+    }
+}
+```
+
 - Target service to use vertx-http-gateway-connector to connect with Gateway
 ```xml
 <dependency>
