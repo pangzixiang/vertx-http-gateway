@@ -12,19 +12,13 @@ public class DefaultEventHandler implements EventHandler {
     }
 
     @Override
-    public Future<Void> afterEstablishConnection(String serviceName, ServiceRegistrationInstance serviceRegistrationInstance) {
-        return Future.succeededFuture();
-    }
+    public void afterEstablishConnection(String serviceName, ServiceRegistrationInstance serviceRegistrationInstance) {}
 
     @Override
-    public Future<Void> beforeRemoveConnection(String serviceName, ServiceRegistrationInstance serviceRegistrationInstance) {
-        return Future.succeededFuture();
-    }
+    public void beforeRemoveConnection(String serviceName, ServiceRegistrationInstance serviceRegistrationInstance) {}
 
     @Override
-    public Future<Void> afterRemoveConnection(String serviceName, ServiceRegistrationInstance serviceRegistrationInstance) {
-        return Future.succeededFuture();
-    }
+    public void afterRemoveConnection(String serviceName, ServiceRegistrationInstance serviceRegistrationInstance) {}
 
     @Override
     public Future<Void> beforeProxyRequest(long requestId, HttpServerRequest httpServerRequest, ServiceRegistrationInstance serviceRegistrationInstance) {
@@ -32,7 +26,5 @@ public class DefaultEventHandler implements EventHandler {
     }
 
     @Override
-    public Future<Void> afterProxyRequest(long requestId, HttpServerRequest httpServerRequest, ServiceRegistrationInstance serviceRegistrationInstance) {
-        return Future.succeededFuture();
-    }
+    public void afterProxyRequest(long requestId, HttpServerRequest httpServerRequest, ServiceRegistrationInstance serviceRegistrationInstance) {}
 }

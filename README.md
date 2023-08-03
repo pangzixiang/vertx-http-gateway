@@ -54,21 +54,18 @@ public class YourEventHandler implements EventHandler {
     }
 
     @Override
-    public Future<Void> afterEstablishConnection(String serviceName, ServiceRegistrationInstance serviceRegistrationInstance) {
+    public void afterEstablishConnection(String serviceName, ServiceRegistrationInstance serviceRegistrationInstance) {
         log.info("afterEstablishConnection");
-        return Future.succeededFuture();
     }
 
     @Override
-    public Future<Void> beforeRemoveConnection(String serviceName, ServiceRegistrationInstance serviceRegistrationInstance) {
+    public void beforeRemoveConnection(String serviceName, ServiceRegistrationInstance serviceRegistrationInstance) {
         log.info("beforeRemoveConnection");
-        return Future.succeededFuture();
     }
 
     @Override
-    public Future<Void> afterRemoveConnection(String serviceName, ServiceRegistrationInstance serviceRegistrationInstance) {
+    public void afterRemoveConnection(String serviceName, ServiceRegistrationInstance serviceRegistrationInstance) {
         log.info("afterRemoveConnection");
-        return Future.succeededFuture();
     }
 
     @Override
@@ -78,9 +75,8 @@ public class YourEventHandler implements EventHandler {
     }
 
     @Override
-    public Future<Void> afterProxyRequest(long requestId, HttpServerRequest httpServerRequest, ServiceRegistrationInstance serviceRegistrationInstance) {
+    public void afterProxyRequest(long requestId, HttpServerRequest httpServerRequest, ServiceRegistrationInstance serviceRegistrationInstance) {
         log.info("afterProxyRequest");
-        return Future.succeededFuture();
     }
 }
 

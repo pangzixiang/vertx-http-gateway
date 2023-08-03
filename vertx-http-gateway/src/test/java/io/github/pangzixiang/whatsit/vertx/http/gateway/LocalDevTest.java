@@ -29,7 +29,9 @@ public class LocalDevTest {
                rc.next();
            }
         });
-        vertx.deployVerticle(new VertxHttpGatewayMainVerticle(vertxHttpGatewayOptions).withCustomRouter(customRouter).withEventHandler(new EventHandler() {
+        vertx.deployVerticle(new VertxHttpGatewayMainVerticle(vertxHttpGatewayOptions)
+                .withCustomRouter(customRouter)
+                .withEventHandler(new EventHandler() {
             @Override
             public Future<Void> beforeEstablishConnection(RoutingContext routingContext) {
                 log.info("beforeEstablishConnection");
@@ -37,21 +39,18 @@ public class LocalDevTest {
             }
 
             @Override
-            public Future<Void> afterEstablishConnection(String serviceName, ServiceRegistrationInstance serviceRegistrationInstance) {
+            public void afterEstablishConnection(String serviceName, ServiceRegistrationInstance serviceRegistrationInstance) {
                 log.info("afterEstablishConnection");
-                return Future.succeededFuture();
             }
 
             @Override
-            public Future<Void> beforeRemoveConnection(String serviceName, ServiceRegistrationInstance serviceRegistrationInstance) {
+            public void beforeRemoveConnection(String serviceName, ServiceRegistrationInstance serviceRegistrationInstance) {
                 log.info("beforeRemoveConnection");
-                return Future.succeededFuture();
             }
 
             @Override
-            public Future<Void> afterRemoveConnection(String serviceName, ServiceRegistrationInstance serviceRegistrationInstance) {
+            public void afterRemoveConnection(String serviceName, ServiceRegistrationInstance serviceRegistrationInstance) {
                 log.info("afterRemoveConnection");
-                return Future.succeededFuture();
             }
 
             @Override
@@ -61,11 +60,10 @@ public class LocalDevTest {
             }
 
             @Override
-            public Future<Void> afterProxyRequest(long requestId, HttpServerRequest httpServerRequest, ServiceRegistrationInstance serviceRegistrationInstance) {
+            public void afterProxyRequest(long requestId, HttpServerRequest httpServerRequest, ServiceRegistrationInstance serviceRegistrationInstance) {
                 log.info("afterProxyRequest");
-                return Future.succeededFuture();
             }
-        }));
+        })).onSuccess(s -> log.info("Succeeded to start Http vertx gateway")).onFailure(throwable -> log.error("Failed to start vertx http gateway", throwable));
 
         Router router = Router.router(vertx);
 

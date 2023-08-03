@@ -37,28 +37,31 @@ class ListenerServerHandler extends AbstractVerticle implements Handler<RoutingC
                         .instanceId(instance)
                         .build();
 
-                this.addConnector(serviceName, serviceRegistrationInstance).onFailure(throwable -> serverWebSocket.reject())
-                        .compose(unused -> eventHandler.afterEstablishConnection(serviceName, serviceRegistrationInstance)).onSuccess(unused -> {
-                            serverWebSocket.handler(buffer -> {
-                                MessageChunk messageChunk = new MessageChunk(buffer);
-                                long requestId = messageChunk.getRequestId();
-                                getVertx().eventBus().send(ProxyServerHandler.getProxyRequestEventBusAddress(requestId), buffer);
-                            });
+                this.addConnector(serviceName, serviceRegistrationInstance).onSuccess(unused -> {
 
-                            MessageConsumer<Object> messageConsumer = getVertx().eventBus().consumer(serviceRegistrationInstance.getEventBusAddress()).handler(msg -> {
-                                Buffer chunk = (Buffer) msg.body();
-                                serverWebSocket.writeBinaryMessage(chunk);
-                            });
+                    eventHandler.afterEstablishConnection(serviceName, serviceRegistrationInstance);
 
-                            serverWebSocket.closeHandler(unused2 -> {
-                                eventHandler.beforeRemoveConnection(serviceName, serviceRegistrationInstance).onComplete(unused3 -> {
-                                    messageConsumer.unregister();
-                                    this.removeConnector(serviceName, serviceRegistrationInstance).compose(unused4 -> eventHandler.afterRemoveConnection(serviceName, serviceRegistrationInstance));
-                                });
-                            });
+                    serverWebSocket.handler(buffer -> {
+                        MessageChunk messageChunk = new MessageChunk(buffer);
+                        long requestId = messageChunk.getRequestId();
+                        getVertx().eventBus().send(ProxyServerHandler.getProxyRequestEventBusAddress(requestId), buffer);
+                    });
+
+                    MessageConsumer<Object> messageConsumer = getVertx().eventBus().consumer(serviceRegistrationInstance.getEventBusAddress()).handler(msg -> {
+                        Buffer chunk = (Buffer) msg.body();
+                        serverWebSocket.writeBinaryMessage(chunk);
+                    });
+
+                    serverWebSocket.closeHandler(unused2 -> {
+                        eventHandler.beforeRemoveConnection(serviceName, serviceRegistrationInstance);
+                        messageConsumer.unregister();
+                        this.removeConnector(serviceName, serviceRegistrationInstance).onSuccess(unused3 -> eventHandler.afterRemoveConnection(serviceName, serviceRegistrationInstance)).onFailure(throwable -> {
+                            log.error("Failed to remove connector [{} -> {}]", serviceName, serviceRegistrationInstance);
                         });
+                    });
+                }).onFailure(throwable -> serverWebSocket.reject());
             }).onFailure(routingContext::fail);
-        });
+        }).onFailure(routingContext::fail);
     }
 
     private Future<Void> addConnector(String serviceName, ServiceRegistrationInstance serviceRegistrationInstance) {
@@ -76,7 +79,7 @@ class ListenerServerHandler extends AbstractVerticle implements Handler<RoutingC
             ServiceRegistrationInfo serviceRegistrationInfo = (ServiceRegistrationInfo) GatewayUtils.getConnectorInfoMap(getVertx()).get(serviceName);
             if (serviceRegistrationInfo != null) {
                 serviceRegistrationInfo.removeTargetServer(serviceRegistrationInstance);
-                log.debug("Remove connection [{}] from {}:{} due to connection closed", serviceRegistrationInstance.getInstanceId(), serviceRegistrationInstance.getRemoteAddress(), serviceRegistrationInstance.getRemotePort());
+                log.debug("Remove connection [{}] from {}:{}", serviceRegistrationInstance.getInstanceId(), serviceRegistrationInstance.getRemoteAddress(), serviceRegistrationInstance.getRemotePort());
             }
             lock.release();
         }).onFailure(throwable -> log.error("Failed to get Lock to add connector info", throwable)).mapEmpty();
