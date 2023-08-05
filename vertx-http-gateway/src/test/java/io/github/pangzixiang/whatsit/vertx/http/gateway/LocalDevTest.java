@@ -7,6 +7,7 @@ import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaderValues;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.Router;
@@ -92,6 +93,29 @@ public class LocalDevTest {
 
         router.get("/test-service").handler(rc -> {
            rc.response().sendFile("test.html");
+        });
+
+        router.route("/test-service/ws").handler(rc -> {
+           rc.request().toWebSocket().onSuccess(ws -> {
+               log.info("ws connected");
+               ws.handler(buffer -> {
+                   log.info("ws received [{}]", buffer);
+               });
+
+               long id = vertx.setPeriodic(0, 3000, l -> {
+                  ws.writeBinaryMessage(Buffer.buffer(String.valueOf(System.currentTimeMillis())).appendByte((byte) 1));
+               });
+
+               long id2 = vertx.setPeriodic(1000, 3000, l -> {
+                   ws.writeTextMessage(String.valueOf(System.currentTimeMillis()));
+               });
+
+               ws.closeHandler(unused -> {
+                  log.info("ws closed");
+                  vertx.cancelTimer(id);
+                  vertx.cancelTimer(id2);
+               });
+           }).onFailure(rc::fail);
         });
 
         vertx.createHttpServer()
