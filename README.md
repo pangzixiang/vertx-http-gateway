@@ -163,7 +163,7 @@ public class Main {
     }
 }
 ```
-- Target service (Javascript) to use [vertx-http-gateway-js-connector](https://www.npmjs.com/package/vertx-http-gateway-js-connector) to connect with Gateway
+- Target service (Javascript) to use [vertx-http-gateway-js-connector](https://github.com/pangzixiang/vertx-http-gateway-js-connector) to connect with Gateway
 ```shell
 npm i vertx-http-gateway-js-connector
 ```
