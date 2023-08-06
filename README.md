@@ -109,7 +109,7 @@ public class Main {
 }
 ```
 
-- Target service to use vertx-http-gateway-connector to connect with Gateway
+- Target service (Java) to use vertx-http-gateway-connector to connect with Gateway
 ```xml
 <dependency>
     <groupId>io.github.pangzixiang.whatsit</groupId>
@@ -161,4 +161,12 @@ public class Main {
                 }).onFailure(throwable -> log.error(throwable.getMessage(), throwable));
     }
 }
+```
+- Target service (Javascript) to use [vertx-http-gateway-js-connector](https://www.npmjs.com/package/vertx-http-gateway-js-connector) to connect with Gateway
+```shell
+npm i vertx-http-gateway-js-connector
+```
+```javascript
+const connect = require("vertx-http-gateway-js-connector")
+connect(serviceName, port, "localhost", "9090")
 ```
