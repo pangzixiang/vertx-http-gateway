@@ -168,14 +168,18 @@ public class Main {
 npm i vertx-http-gateway-js-connector
 ```
 ```javascript
-const connect = require("vertx-http-gateway-js-connector")
-connect({
+const Connector = require("vertx-http-gateway-js-connector")
+const connector = new Connector({
     listenerHost : "localhost",
     listenerPort : 9090,
     listenerSsl : false,
-    serviceName : "test-service",
-    servicePort : 12345,
+    serviceName : "js-service",
+    servicePort : server.address().port,
     serviceHost : "localhost",
-    serviceSsl : false
+    serviceSsl : false,
+    instanceNum : 4
 })
+connector.connect();
+
+setTimeout(() => connector.disconnect(), 5000)
 ```
