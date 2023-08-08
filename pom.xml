@@ -31,8 +31,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <vertx.version>4.4.4</vertx.version>
-        <commons-lang3.version>3.12.0</commons-lang3.version>
-        <logback.version>1.4.8</logback.version>
+        <commons-lang3.version>3.13.0</commons-lang3.version>
+        <logback.version>1.4.9</logback.version>
         <slf4j.version>2.0.7</slf4j.version>
         <lombok.version>1.18.28</lombok.version>
 
@@ -97,13 +97,13 @@
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcprov-jdk15to18</artifactId>
-            <version>1.75</version>
+            <version>1.76</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcpkix-jdk15to18</artifactId>
-            <version>1.75</version>
+            <version>1.76</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
