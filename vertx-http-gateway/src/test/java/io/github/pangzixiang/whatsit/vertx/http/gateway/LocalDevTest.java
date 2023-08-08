@@ -6,10 +6,10 @@ import io.github.pangzixiang.whatsit.vertx.http.gateway.handler.EventHandler;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaderValues;
 import io.vertx.core.Future;
+import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.http.HttpServerRequest;
-import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.http.*;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import lombok.extern.slf4j.Slf4j;
@@ -125,7 +125,39 @@ public class LocalDevTest {
                     log.info("Test Service started at {}", httpServer.actualPort());
                     VertxHttpGatewayConnectorOptions vertxHttpGatewayConnectorOptions =
                             new VertxHttpGatewayConnectorOptions("test-service", httpServer.actualPort(), "localhost", 9090);
-                    VertxHttpGatewayConnector vertxHttpGatewayConnector = new VertxHttpGatewayConnector(vertx, vertxHttpGatewayConnectorOptions);
+                    VertxHttpGatewayConnector vertxHttpGatewayConnector = new VertxHttpGatewayConnector(vertx, vertxHttpGatewayConnectorOptions).withEventHandler(new io.github.pangzixiang.whatsit.vertx.http.gateway.connector.handler.EventHandler() {
+                        @Override
+                        public Future<WebSocketConnectOptions> beforeEstablishConnection(WebSocketConnectOptions webSocketConnectOptions) {
+                            log.info("beforeEstablishConnection {}", webSocketConnectOptions);
+                            return Future.succeededFuture(webSocketConnectOptions);
+                        }
+
+                        @Override
+                        public void afterEstablishConnection(WebSocket webSocket) {
+                            log.info("afterEstablishConnection {}", webSocket.headers());
+                        }
+
+                        @Override
+                        public void beforeDisconnect() {
+                            log.info("beforeDisconnect");
+                        }
+
+                        @Override
+                        public void afterDisconnect(boolean succeeded, Throwable cause) {
+                            log.info("AfterDisconnect {}", succeeded, cause);
+                        }
+
+                        @Override
+                        public Future<Void> beforeProxyRequest(HttpMethod requestHttpMethod, String requestUri, MultiMap requestHeaders, HttpVersion requestHttpVersion, long requestId) {
+                            log.info("beforeProxyRequest {} {} {} {} {}", requestHttpMethod, requestUri, requestHeaders, requestHttpMethod, requestId);
+                            return Future.succeededFuture();
+                        }
+
+                        @Override
+                        public void afterProxyRequest(HttpMethod requestHttpMethod, String requestUri, MultiMap requestHeaders, HttpVersion requestHttpVersion, HttpClientResponse httpClientResponse, long requestId) {
+                            log.info("afterProxyRequest {} {} {} {} {} {}", requestHttpMethod, requestUri, requestHeaders, requestHttpMethod, requestId, httpClientResponse.headers());
+                        }
+                    });
                     vertxHttpGatewayConnector.connect();
 
 //                    vertx.setTimer(5000, l -> {
