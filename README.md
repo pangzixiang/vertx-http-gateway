@@ -203,14 +203,14 @@ public class Main {
             }
 
             @Override
-            public Future<Void> beforeProxyRequest(HttpMethod requestHttpMethod, String requestUri, MultiMap requestHeaders, HttpVersion requestHttpVersion, long requestId) {
-                log.info("beforeProxyRequest {} {} {} {} {}", requestHttpMethod, requestUri, requestHeaders, requestHttpMethod, requestId);
-                return Future.succeededFuture();
+            public Future<ProxyRequestContext> beforeProxyRequest(ProxyRequestContext proxyRequestContext) {
+                log.info("BeforeProxyRequest {}", proxyRequestContext);
+                return Future.succeededFuture(proxyRequestContext);
             }
 
             @Override
-            public void afterProxyRequest(HttpMethod requestHttpMethod, String requestUri, MultiMap requestHeaders, HttpVersion requestHttpVersion, HttpClientResponse httpClientResponse, long requestId) {
-                log.info("afterProxyRequest {} {} {} {} {} {}", requestHttpMethod, requestUri, requestHeaders, requestHttpMethod, requestId, httpClientResponse.headers());
+            public void afterProxyRequest(ProxyRequestContext proxyRequestContext) {
+                log.info("afterProxyRequest {}",proxyRequestContext.getHttpClientResponse().headers());
             }
         });
         vertxHttpGatewayConnector.connect();

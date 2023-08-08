@@ -1,12 +1,12 @@
 package io.github.pangzixiang.whatsit.vertx.http.gateway;
 
+import io.github.pangzixiang.whatsit.vertx.http.gateway.connector.ProxyRequestContext;
 import io.github.pangzixiang.whatsit.vertx.http.gateway.connector.VertxHttpGatewayConnector;
 import io.github.pangzixiang.whatsit.vertx.http.gateway.connector.VertxHttpGatewayConnectorOptions;
 import io.github.pangzixiang.whatsit.vertx.http.gateway.handler.EventHandler;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaderValues;
 import io.vertx.core.Future;
-import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.*;
@@ -148,15 +148,16 @@ public class LocalDevTest {
                         }
 
                         @Override
-                        public Future<Void> beforeProxyRequest(HttpMethod requestHttpMethod, String requestUri, MultiMap requestHeaders, HttpVersion requestHttpVersion, long requestId) {
-                            log.info("beforeProxyRequest {} {} {} {} {}", requestHttpMethod, requestUri, requestHeaders, requestHttpMethod, requestId);
-                            return Future.succeededFuture();
+                        public Future<ProxyRequestContext> beforeProxyRequest(ProxyRequestContext proxyRequestContext) {
+                            log.info("BeforeProxyRequest {}", proxyRequestContext);
+                            return Future.succeededFuture(proxyRequestContext);
                         }
 
                         @Override
-                        public void afterProxyRequest(HttpMethod requestHttpMethod, String requestUri, MultiMap requestHeaders, HttpVersion requestHttpVersion, HttpClientResponse httpClientResponse, long requestId) {
-                            log.info("afterProxyRequest {} {} {} {} {} {}", requestHttpMethod, requestUri, requestHeaders, requestHttpMethod, requestId, httpClientResponse.headers());
+                        public void afterProxyRequest(ProxyRequestContext proxyRequestContext) {
+                            log.info("afterProxyRequest {}",proxyRequestContext.getHttpClientResponse().headers());
                         }
+
                     });
                     vertxHttpGatewayConnector.connect();
 

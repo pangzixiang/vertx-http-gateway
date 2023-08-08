@@ -52,11 +52,11 @@ class VertxHttpGatewayConnectorHandler extends AbstractVerticle implements Handl
                 HttpVersion httpVersion = requestMessageInfoChunkBody.getHttpVersion();
 
                 try {
-                    eventHandler.beforeProxyRequest(httpMethod, uri, headers, httpVersion, requestId).onSuccess(unused -> {
-                        if (isWebsocket(httpVersion, httpMethod, headers)) {
-                            handleProxyWebsocket(webSocket, uri, headers, requestId);
+                    eventHandler.beforeProxyRequest(new ProxyRequestContext(httpMethod, uri, headers, httpVersion, requestId, null)).onSuccess(proxyRequestContext -> {
+                        if (isWebsocket(proxyRequestContext)) {
+                            handleProxyWebsocket(webSocket, proxyRequestContext);
                         } else {
-                            handleProxyHttpRequest(webSocket, httpMethod, uri, headers, requestId);
+                            handleProxyHttpRequest(webSocket, proxyRequestContext);
                         }
                     }).onFailure(throwable -> {
                         log.error("Failed to proxy request for {} {}:{}{}", httpMethod, vertxHttpGatewayConnectorOptions.getServiceHost(),
@@ -76,14 +76,14 @@ class VertxHttpGatewayConnectorHandler extends AbstractVerticle implements Handl
         });
     }
 
-    private void handleProxyWebsocket(WebSocket webSocket, String uri, MultiMap headers, long requestId) {
+    private void handleProxyWebsocket(WebSocket webSocket, ProxyRequestContext proxyRequestContext) {
         WebSocketConnectOptions webSocketConnectOptions = new WebSocketConnectOptions();
         webSocketConnectOptions.setHost(vertxHttpGatewayConnectorOptions.getServiceHost());
         webSocketConnectOptions.setPort(vertxHttpGatewayConnectorOptions.getServicePort());
-        webSocketConnectOptions.setURI(uri);
-        webSocketConnectOptions.setHeaders(headers.remove(HttpHeaderNames.SEC_WEBSOCKET_EXTENSIONS));
+        webSocketConnectOptions.setURI(proxyRequestContext.getRequestUri());
+        webSocketConnectOptions.setHeaders(proxyRequestContext.getRequestHeaders().remove(HttpHeaderNames.SEC_WEBSOCKET_EXTENSIONS));
         proxyClient.webSocket(webSocketConnectOptions).onSuccess(ws -> {
-            MessageConsumer<Object> consumer = getVertx().eventBus().consumer(getProxyRequestEventbusAddress(requestId)).handler(message -> {
+            MessageConsumer<Object> consumer = getVertx().eventBus().consumer(getProxyRequestEventbusAddress(proxyRequestContext.getRequestId())).handler(message -> {
                 Buffer chunkMessage = (Buffer) message.body();
                 MessageChunk requestChunkMessage = new MessageChunk(chunkMessage);
                 byte type = requestChunkMessage.getChunkType();
@@ -103,22 +103,22 @@ class VertxHttpGatewayConnectorHandler extends AbstractVerticle implements Handl
             consumer.completionHandler(unused -> webSocket.resume());
 
             ws.textMessageHandler(textBody -> {
-                webSocket.write(MessageChunk.build(MessageChunkType.BODY, requestId, Buffer.buffer().appendByte((byte) 0).appendString(textBody)));
+                webSocket.write(MessageChunk.build(MessageChunkType.BODY, proxyRequestContext.getRequestId(), Buffer.buffer().appendByte((byte) 0).appendString(textBody)));
             });
 
             ws.binaryMessageHandler(bodyBuffer -> {
-                webSocket.write(MessageChunk.build(MessageChunkType.BODY, requestId, Buffer.buffer().appendByte((byte) 1).appendBuffer(bodyBuffer)));
+                webSocket.write(MessageChunk.build(MessageChunkType.BODY, proxyRequestContext.getRequestId(), Buffer.buffer().appendByte((byte) 1).appendBuffer(bodyBuffer)));
             });
 
             ws.closeHandler(unused -> {
                 consumer.unregister();
-                webSocket.writeBinaryMessage(MessageChunk.build(MessageChunkType.CLOSED, requestId));
-                eventHandler.afterProxyRequest(HttpMethod.GET, uri, headers, HttpVersion.HTTP_1_1, null, requestId);
+                webSocket.writeBinaryMessage(MessageChunk.build(MessageChunkType.CLOSED, proxyRequestContext.getRequestId()));
+                eventHandler.afterProxyRequest(proxyRequestContext);
             });
         }).onFailure(throwable -> {
             log.error("Failed to establish websocket connection for {}:{}{}", vertxHttpGatewayConnectorOptions.getServiceHost(),
-                    vertxHttpGatewayConnectorOptions.getServicePort(), uri, throwable);
-            webSocket.writeBinaryMessage(MessageChunk.build(MessageChunkType.ERROR, requestId, throwable.getMessage()));
+                    vertxHttpGatewayConnectorOptions.getServicePort(), proxyRequestContext.getRequestUri(), throwable);
+            webSocket.writeBinaryMessage(MessageChunk.build(MessageChunkType.ERROR, proxyRequestContext.getRequestId(), throwable.getMessage()));
             webSocket.resume();
         });
     }
@@ -134,17 +134,17 @@ class VertxHttpGatewayConnectorHandler extends AbstractVerticle implements Handl
         return instanceId + "." + "proxy-request." + requestId;
     }
 
-    private boolean isWebsocket(HttpVersion httpVersion, HttpMethod httpMethod, MultiMap headers) {
-        return httpVersion.equals(HttpVersion.HTTP_1_1) &&
-                httpMethod.equals(HttpMethod.GET) &&
-                headers.contains(HttpHeaders.CONNECTION, HttpHeaders.UPGRADE, true);
+    private boolean isWebsocket(ProxyRequestContext proxyRequestContext) {
+        return proxyRequestContext.getRequestHttpVersion().equals(HttpVersion.HTTP_1_1) &&
+                proxyRequestContext.getRequestHttpMethod().equals(HttpMethod.GET) &&
+                proxyRequestContext.getRequestHeaders().contains(HttpHeaders.CONNECTION, HttpHeaders.UPGRADE, true);
     }
 
-    private void handleProxyHttpRequest(WebSocket webSocket, HttpMethod httpMethod, String uri, MultiMap headers, long requestId) {
-        proxyClient.request(httpMethod, vertxHttpGatewayConnectorOptions.getServicePort(), vertxHttpGatewayConnectorOptions.getServiceHost(), uri).onSuccess(httpClientRequest -> {
-            httpClientRequest.headers().addAll(headers);
+    private void handleProxyHttpRequest(WebSocket webSocket, ProxyRequestContext proxyRequestContext) {
+        proxyClient.request(proxyRequestContext.getRequestHttpMethod(), vertxHttpGatewayConnectorOptions.getServicePort(), vertxHttpGatewayConnectorOptions.getServiceHost(), proxyRequestContext.getRequestUri()).onSuccess(httpClientRequest -> {
+            httpClientRequest.headers().addAll(proxyRequestContext.getRequestHeaders());
 
-            MessageConsumer<Object> consumer = getVertx().eventBus().consumer(getProxyRequestEventbusAddress(requestId)).handler(message -> {
+            MessageConsumer<Object> consumer = getVertx().eventBus().consumer(getProxyRequestEventbusAddress(proxyRequestContext.getRequestId())).handler(message -> {
                 Buffer chunkMessage = (Buffer) message.body();
                 MessageChunk requestChunkMessage = new MessageChunk(chunkMessage);
                 byte type = requestChunkMessage.getChunkType();
@@ -171,26 +171,27 @@ class VertxHttpGatewayConnectorHandler extends AbstractVerticle implements Handl
             });
 
             httpClientRequest.response().onSuccess(httpClientResponse -> {
-                Buffer firstChunk = MessageChunk.build(MessageChunkType.INFO, requestId, buildFirstResponseChunkBody(httpClientResponse));
+                Buffer firstChunk = MessageChunk.build(MessageChunkType.INFO, proxyRequestContext.getRequestId(), buildFirstResponseChunkBody(httpClientResponse));
                 webSocket.writeBinaryMessage(firstChunk);
 
                 httpClientResponse.handler(bodyBuffer -> {
-                    webSocket.writeBinaryMessage(MessageChunk.build(MessageChunkType.BODY, requestId, bodyBuffer));
+                    webSocket.writeBinaryMessage(MessageChunk.build(MessageChunkType.BODY, proxyRequestContext.getRequestId(), bodyBuffer));
                 });
 
                 httpClientResponse.endHandler(unused -> {
-                    webSocket.writeBinaryMessage(MessageChunk.build(MessageChunkType.ENDING, requestId));
-                    eventHandler.afterProxyRequest(httpMethod, uri, headers, httpClientRequest.version(), httpClientResponse, requestId);
+                    webSocket.writeBinaryMessage(MessageChunk.build(MessageChunkType.ENDING, proxyRequestContext.getRequestId()));
+                    proxyRequestContext.setHttpClientResponse(httpClientResponse);
+                    eventHandler.afterProxyRequest(proxyRequestContext);
                 });
             }).onFailure(throwable -> {
-                log.error("Failed to receive response for {} {}:{}{}", httpMethod, vertxHttpGatewayConnectorOptions.getServiceHost(),
-                        vertxHttpGatewayConnectorOptions.getServicePort(), uri, throwable);
-                webSocket.writeBinaryMessage(MessageChunk.build(MessageChunkType.ERROR, requestId, throwable.getMessage()));
+                log.error("Failed to receive response for {} {}:{}{}", proxyRequestContext.getRequestHttpMethod(), vertxHttpGatewayConnectorOptions.getServiceHost(),
+                        vertxHttpGatewayConnectorOptions.getServicePort(), proxyRequestContext.getRequestUri(), throwable);
+                webSocket.writeBinaryMessage(MessageChunk.build(MessageChunkType.ERROR, proxyRequestContext.getRequestId(), throwable.getMessage()));
             });
         }).onFailure(throwable -> {
-            log.error("Failed to send request for {} {}:{}{}", httpMethod, vertxHttpGatewayConnectorOptions.getServiceHost(),
-                    vertxHttpGatewayConnectorOptions.getServicePort(), uri, throwable);
-            webSocket.writeBinaryMessage(MessageChunk.build(MessageChunkType.ERROR, requestId, throwable.getMessage()));
+            log.error("Failed to send request for {} {}:{}{}", proxyRequestContext.getRequestHttpMethod(), vertxHttpGatewayConnectorOptions.getServiceHost(),
+                    vertxHttpGatewayConnectorOptions.getServicePort(), proxyRequestContext.getRequestUri(), throwable);
+            webSocket.writeBinaryMessage(MessageChunk.build(MessageChunkType.ERROR, proxyRequestContext.getRequestId(), throwable.getMessage()));
             webSocket.resume();
         });
     }

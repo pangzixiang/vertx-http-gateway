@@ -1,7 +1,7 @@
 package io.github.pangzixiang.whatsit.vertx.http.gateway.connector.handler;
 
+import io.github.pangzixiang.whatsit.vertx.http.gateway.connector.ProxyRequestContext;
 import io.vertx.core.Future;
-import io.vertx.core.MultiMap;
 import io.vertx.core.http.*;
 
 public class DefaultEventHandler implements EventHandler {
@@ -26,12 +26,12 @@ public class DefaultEventHandler implements EventHandler {
     }
 
     @Override
-    public Future<Void> beforeProxyRequest(HttpMethod requestHttpMethod, String requestUri, MultiMap requestHeaders, HttpVersion requestHttpVersion, long requestId) {
-        return Future.succeededFuture();
+    public Future<ProxyRequestContext> beforeProxyRequest(ProxyRequestContext proxyRequestContext) {
+        return Future.succeededFuture(proxyRequestContext);
     }
 
     @Override
-    public void afterProxyRequest(HttpMethod requestHttpMethod, String requestUri, MultiMap requestHeaders, HttpVersion requestHttpVersion, HttpClientResponse httpClientResponse, long requestId) {
+    public void afterProxyRequest(ProxyRequestContext proxyRequestContext) {
 
     }
 }
