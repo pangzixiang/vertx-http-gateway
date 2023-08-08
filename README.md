@@ -110,6 +110,16 @@ public class Main {
 }
 ```
 
+- Get Connectors Info
+```java
+public class Main {
+    public static void main(String[] args) {
+        VertxHttpGatewayContext vertxHttpGatewayContext = VertxHttpGatewayContext.getInstance();
+        vertxHttpGatewayContext.getConnectorServiceDetails();
+    }
+}
+```
+
 - Target service (Java) to use vertx-http-gateway-connector to connect with Gateway
 ```xml
 <dependency>
@@ -163,6 +173,51 @@ public class Main {
     }
 }
 ```
+
+- Customize the Events for Connector
+```java
+public class Main {
+    public static void main(String[] args) {
+        VertxHttpGatewayConnectorOptions vertxHttpGatewayConnectorOptions =
+                new VertxHttpGatewayConnectorOptions("test-service", httpServer.actualPort(), "localhost", 9090);
+        VertxHttpGatewayConnector vertxHttpGatewayConnector = new VertxHttpGatewayConnector(vertx, vertxHttpGatewayConnectorOptions).withEventHandler(new io.github.pangzixiang.whatsit.vertx.http.gateway.connector.handler.EventHandler() {
+            @Override
+            public Future<WebSocketConnectOptions> beforeEstablishConnection(WebSocketConnectOptions webSocketConnectOptions) {
+                log.info("beforeEstablishConnection {}", webSocketConnectOptions);
+                return Future.succeededFuture(webSocketConnectOptions);
+            }
+
+            @Override
+            public void afterEstablishConnection(WebSocket webSocket) {
+                log.info("afterEstablishConnection {}", webSocket.headers());
+            }
+
+            @Override
+            public void beforeDisconnect() {
+                log.info("beforeDisconnect");
+            }
+
+            @Override
+            public void afterDisconnect(boolean succeeded, Throwable cause) {
+                log.info("AfterDisconnect {}", succeeded, cause);
+            }
+
+            @Override
+            public Future<Void> beforeProxyRequest(HttpMethod requestHttpMethod, String requestUri, MultiMap requestHeaders, HttpVersion requestHttpVersion, long requestId) {
+                log.info("beforeProxyRequest {} {} {} {} {}", requestHttpMethod, requestUri, requestHeaders, requestHttpMethod, requestId);
+                return Future.succeededFuture();
+            }
+
+            @Override
+            public void afterProxyRequest(HttpMethod requestHttpMethod, String requestUri, MultiMap requestHeaders, HttpVersion requestHttpVersion, HttpClientResponse httpClientResponse, long requestId) {
+                log.info("afterProxyRequest {} {} {} {} {} {}", requestHttpMethod, requestUri, requestHeaders, requestHttpMethod, requestId, httpClientResponse.headers());
+            }
+        });
+        vertxHttpGatewayConnector.connect();
+    }
+}
+```
+
 - Target service (Javascript) to use [vertx-http-gateway-js-connector](https://github.com/pangzixiang/vertx-http-gateway-js-connector) to connect with Gateway
 ```shell
 npm i vertx-http-gateway-js-connector

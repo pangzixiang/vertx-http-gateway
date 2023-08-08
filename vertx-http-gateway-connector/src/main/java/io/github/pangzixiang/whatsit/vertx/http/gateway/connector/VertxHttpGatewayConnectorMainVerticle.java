@@ -1,5 +1,6 @@
 package io.github.pangzixiang.whatsit.vertx.http.gateway.connector;
 
+import io.github.pangzixiang.whatsit.vertx.http.gateway.connector.handler.EventHandler;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -11,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 @AllArgsConstructor
 class VertxHttpGatewayConnectorMainVerticle extends AbstractVerticle {
     private final VertxHttpGatewayConnectorOptions vertxHttpGatewayConnectorOptions;
+    private final EventHandler eventHandler;
 
     @Override
     public void start(Promise<Void> startPromise) throws Exception {
@@ -21,7 +23,7 @@ class VertxHttpGatewayConnectorMainVerticle extends AbstractVerticle {
         webSocketConnectOptions.setPort(vertxHttpGatewayConnectorOptions.getListenerServerPort());
         webSocketConnectOptions.setURI(vertxHttpGatewayConnectorOptions.getListenerServerRegisterPath() + "&instance=" + hashCode());
 
-        VertxHttpGatewayConnectorHandler vertxHttpGatewayConnectorHandler = new VertxHttpGatewayConnectorHandler(vertxHttpGatewayConnectorOptions, String.valueOf(hashCode()));
+        VertxHttpGatewayConnectorHandler vertxHttpGatewayConnectorHandler = new VertxHttpGatewayConnectorHandler(vertxHttpGatewayConnectorOptions, String.valueOf(hashCode()), eventHandler);
 
         Future<String> deployFuture = getVertx().deployVerticle(vertxHttpGatewayConnectorHandler);
 
@@ -37,22 +39,28 @@ class VertxHttpGatewayConnectorMainVerticle extends AbstractVerticle {
     private Future<Void> register(HttpClient registerClient, WebSocketConnectOptions webSocketConnectOptions, VertxHttpGatewayConnectorHandler vertxHttpGatewayConnectorHandler) {
         Promise<Void> promise = Promise.promise();
         getVertx().setPeriodic(0, vertxHttpGatewayConnectorOptions.getConnectionRetryIntervalInMillis(), id -> {
-            log.debug("Start to register to vertx http gateway [{}:{}{}]", webSocketConnectOptions.getHost(), webSocketConnectOptions.getPort(), webSocketConnectOptions.getURI());
-            registerClient.webSocket(webSocketConnectOptions)
-                    .onSuccess(ws -> {
-                        getVertx().cancelTimer(id);
-                        log.info("Succeeded to register to vertx http gateway [{}:{}{}]!", webSocketConnectOptions.getHost(), webSocketConnectOptions.getPort(), webSocketConnectOptions.getURI());
-                        promise.complete();
-                        ws.closeHandler(unused -> {
-                            if (getVertx().deploymentIDs().contains(deploymentID())) {
-                                register(registerClient, webSocketConnectOptions, vertxHttpGatewayConnectorHandler);
-                            }
+            eventHandler.beforeEstablishConnection(webSocketConnectOptions).onSuccess(options -> {
+                log.debug("Start to register to vertx http gateway [{}:{}{}]", options.getHost(), options.getPort(), options.getURI());
+                registerClient.webSocket(options)
+                        .onSuccess(ws -> {
+                            getVertx().cancelTimer(id);
+                            log.info("Succeeded to register to vertx http gateway [{}:{}{}]!", options.getHost(), options.getPort(), options.getURI());
+                            promise.complete();
+                            eventHandler.afterEstablishConnection(ws);
+                            ws.closeHandler(unused -> {
+                                if (getVertx().deploymentIDs().contains(deploymentID())) {
+                                    register(registerClient, options, vertxHttpGatewayConnectorHandler);
+                                }
+                            });
+                            vertxHttpGatewayConnectorHandler.handle(ws);
+                        })
+                        .onFailure(throwable -> {
+                            log.error("Failed to register to vertx http gateway [{}:{}{}]! (error={})", options.getHost(), options.getPort(), options.getURI(), throwable.getMessage());
                         });
-                        vertxHttpGatewayConnectorHandler.handle(ws);
-                    })
-                    .onFailure(throwable -> {
-                        log.error("Failed to register to vertx http gateway [{}:{}{}]! (error={})", webSocketConnectOptions.getHost(), webSocketConnectOptions.getPort(), webSocketConnectOptions.getURI(), throwable.getMessage());
-                    });
+            }).onFailure(throwable -> {
+                getVertx().cancelTimer(id);
+               promise.fail(throwable);
+            });
         });
         return promise.future();
     }

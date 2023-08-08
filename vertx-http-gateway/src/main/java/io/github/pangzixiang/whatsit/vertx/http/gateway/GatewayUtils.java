@@ -11,9 +11,9 @@ import java.util.UUID;
 
 @UtilityClass
 class GatewayUtils {
-    private static final String CONNECTOR_INFO_MAP_NAME = UUID.randomUUID().toString();
+    private static final String CONNECTOR_INFO_MAP_NAME = "CONNECTOR_INFO_MAP_" + UUID.randomUUID();
 
-    private static final String REQUEST_ID_COUNTER_NAME = "REQUEST_ID_COUNTER";
+    private static final String REQUEST_ID_COUNTER_NAME = "REQUEST_ID_COUNTER_" + UUID.randomUUID();
 
     public static <K, V> LocalMap<K, V> getConnectorInfoMap(Vertx vertx) {
         return vertx.sharedData().getLocalMap(CONNECTOR_INFO_MAP_NAME);
