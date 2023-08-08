@@ -1,7 +1,7 @@
 package io.github.pangzixiang.whatsit.vertx.http.gateway.connector.handler;
 
+import io.github.pangzixiang.whatsit.vertx.http.gateway.connector.ProxyRequestContext;
 import io.vertx.core.Future;
-import io.vertx.core.MultiMap;
 import io.vertx.core.http.*;
 
 /**
@@ -40,24 +40,15 @@ public interface EventHandler {
     /**
      * Before proxy request future.
      *
-     * @param requestHttpMethod  the request http method
-     * @param requestUri         the request uri
-     * @param requestHeaders     the request headers
-     * @param requestHttpVersion the request http version
-     * @param requestId          the request id
+     * @param proxyRequestContext the proxy request context
      * @return the future
      */
-    Future<Void> beforeProxyRequest(HttpMethod requestHttpMethod, String requestUri, MultiMap requestHeaders, HttpVersion requestHttpVersion, long requestId);
+    Future<ProxyRequestContext> beforeProxyRequest(ProxyRequestContext proxyRequestContext);
 
     /**
      * After proxy request.
      *
-     * @param requestHttpMethod  the request http method
-     * @param requestUri         the request uri
-     * @param requestHeaders     the request headers
-     * @param requestHttpVersion the request http version
-     * @param httpClientResponse the http client response
-     * @param requestId          the request id
+     * @param proxyRequestContext the proxy request context
      */
-    void afterProxyRequest(HttpMethod requestHttpMethod, String requestUri, MultiMap requestHeaders, HttpVersion requestHttpVersion, HttpClientResponse httpClientResponse, long requestId);
+    void afterProxyRequest(ProxyRequestContext proxyRequestContext);
 }

@@ -137,7 +137,7 @@ class ProxyServerHandler extends AbstractVerticle implements Handler<RoutingCont
             if (Objects.equals(chunkType, MessageChunkType.ERROR.getFlag())) {
                 log.info("Failed to proxy request [{} {} {}] from {} to {}:{} in instance [{}] (requestId={}) due to {}", routingContext.request().version(), routingContext.request().method(), routingContext.request().uri(), routingContext.request().remoteAddress(),
                         serviceRegistrationInstance.getRemoteAddress(), serviceRegistrationInstance.getRemotePort(), serviceRegistrationInstance.getInstanceId(), requestId, messageChunk.getChunkBody());
-                routingContext.response().setStatusCode(HttpResponseStatus.BAD_GATEWAY.code()).end("Failed to proxy request due to target server error (requestId=%s)".formatted(requestId));
+                routingContext.response().setStatusCode(HttpResponseStatus.BAD_GATEWAY.code()).end("Failed to proxy request due to target server error [%s] (requestId=%s)".formatted(messageChunk.getChunkBody(), requestId));
             }
 
             if (Objects.equals(chunkType, MessageChunkType.ENDING.getFlag())) {
