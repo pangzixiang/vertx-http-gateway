@@ -21,7 +21,7 @@ class VertxHttpGatewayConnectorMainVerticle extends AbstractVerticle {
         WebSocketConnectOptions webSocketConnectOptions = new WebSocketConnectOptions();
         webSocketConnectOptions.setHost(vertxHttpGatewayConnectorOptions.getListenerServerHost());
         webSocketConnectOptions.setPort(vertxHttpGatewayConnectorOptions.getListenerServerPort());
-        webSocketConnectOptions.setURI(vertxHttpGatewayConnectorOptions.getListenerServerRegisterPath() + "&instance=" + hashCode());
+        webSocketConnectOptions.setURI(vertxHttpGatewayConnectorOptions.getListenerServerRegisterPath() + "?serviceName=%s&servicePort=%s&instance=%s".formatted(vertxHttpGatewayConnectorOptions.getServiceName(), vertxHttpGatewayConnectorOptions.getServicePort(), hashCode()));
 
         VertxHttpGatewayConnectorHandler vertxHttpGatewayConnectorHandler = new VertxHttpGatewayConnectorHandler(vertxHttpGatewayConnectorOptions, String.valueOf(hashCode()), eventHandler);
 

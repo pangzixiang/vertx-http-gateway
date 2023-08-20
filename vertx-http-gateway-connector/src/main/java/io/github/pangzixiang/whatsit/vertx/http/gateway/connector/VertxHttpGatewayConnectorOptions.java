@@ -34,7 +34,7 @@ public class VertxHttpGatewayConnectorOptions {
     }
 
     public VertxHttpGatewayConnectorOptions(String serviceName, int servicePort, String listenerServerHost, int listenerServerPort) {
-        this(serviceName, servicePort, listenerServerHost, listenerServerPort, "localhost", "/register?serviceName=" + serviceName + "&servicePort=" + servicePort, new HttpClientOptions(), DEFAULT_PROXY_CLIENT_OPTIONS, 2, TimeUnit.SECONDS.toMillis(2));
+        this(serviceName, servicePort, listenerServerHost, listenerServerPort, "localhost", "/register", new HttpClientOptions(), DEFAULT_PROXY_CLIENT_OPTIONS, 2, TimeUnit.SECONDS.toMillis(2));
     }
 
     public VertxHttpGatewayConnectorOptions setServiceHost(String serviceHost) {
