@@ -59,13 +59,13 @@ class VertxHttpGatewayConnectorHandler extends AbstractVerticle implements Handl
                             handleProxyHttpRequest(webSocket, proxyRequestContext);
                         }
                     }).onFailure(throwable -> {
-                        log.error("Failed to proxy request for {} {}:{}{}", httpMethod, vertxHttpGatewayConnectorOptions.getServiceHost(),
+                        log.debug("Failed to proxy request for {} {}:{}{}", httpMethod, vertxHttpGatewayConnectorOptions.getServiceHost(),
                                 vertxHttpGatewayConnectorOptions.getServicePort(), uri, throwable);
                         webSocket.writeBinaryMessage(MessageChunk.build(MessageChunkType.ERROR, requestId, throwable.getMessage()));
                         webSocket.resume();
                     });
                 } catch (Exception e) {
-                    log.error("Failed to proxy request for {} {}:{}{}", httpMethod, vertxHttpGatewayConnectorOptions.getServiceHost(),
+                    log.debug("Failed to proxy request for {} {}:{}{}", httpMethod, vertxHttpGatewayConnectorOptions.getServiceHost(),
                             vertxHttpGatewayConnectorOptions.getServicePort(), uri, e);
                     webSocket.writeBinaryMessage(MessageChunk.build(MessageChunkType.ERROR, requestId, e.getMessage()));
                     webSocket.resume();
@@ -116,7 +116,7 @@ class VertxHttpGatewayConnectorHandler extends AbstractVerticle implements Handl
                 eventHandler.afterProxyRequest(proxyRequestContext);
             });
         }).onFailure(throwable -> {
-            log.error("Failed to establish websocket connection for {}:{}{}", vertxHttpGatewayConnectorOptions.getServiceHost(),
+            log.debug("Failed to establish websocket connection for {}:{}{}", vertxHttpGatewayConnectorOptions.getServiceHost(),
                     vertxHttpGatewayConnectorOptions.getServicePort(), proxyRequestContext.getRequestUri(), throwable);
             webSocket.writeBinaryMessage(MessageChunk.build(MessageChunkType.ERROR, proxyRequestContext.getRequestId(), throwable.getMessage()));
             webSocket.resume();
@@ -184,12 +184,12 @@ class VertxHttpGatewayConnectorHandler extends AbstractVerticle implements Handl
                     eventHandler.afterProxyRequest(proxyRequestContext);
                 });
             }).onFailure(throwable -> {
-                log.error("Failed to receive response for {} {}:{}{}", proxyRequestContext.getRequestHttpMethod(), vertxHttpGatewayConnectorOptions.getServiceHost(),
+                log.debug("Failed to receive response for {} {}:{}{}", proxyRequestContext.getRequestHttpMethod(), vertxHttpGatewayConnectorOptions.getServiceHost(),
                         vertxHttpGatewayConnectorOptions.getServicePort(), proxyRequestContext.getRequestUri(), throwable);
                 webSocket.writeBinaryMessage(MessageChunk.build(MessageChunkType.ERROR, proxyRequestContext.getRequestId(), throwable.getMessage()));
             });
         }).onFailure(throwable -> {
-            log.error("Failed to send request for {} {}:{}{}", proxyRequestContext.getRequestHttpMethod(), vertxHttpGatewayConnectorOptions.getServiceHost(),
+            log.debug("Failed to send request for {} {}:{}{}", proxyRequestContext.getRequestHttpMethod(), vertxHttpGatewayConnectorOptions.getServiceHost(),
                     vertxHttpGatewayConnectorOptions.getServicePort(), proxyRequestContext.getRequestUri(), throwable);
             webSocket.writeBinaryMessage(MessageChunk.build(MessageChunkType.ERROR, proxyRequestContext.getRequestId(), throwable.getMessage()));
             webSocket.resume();

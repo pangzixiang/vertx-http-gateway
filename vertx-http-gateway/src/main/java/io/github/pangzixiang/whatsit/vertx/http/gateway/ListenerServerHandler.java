@@ -56,7 +56,7 @@ class ListenerServerHandler extends AbstractVerticle implements Handler<RoutingC
                         eventHandler.beforeRemoveConnection(serviceName, serviceRegistrationInstance);
                         messageConsumer.unregister();
                         this.removeConnector(serviceName, serviceRegistrationInstance).onSuccess(unused3 -> eventHandler.afterRemoveConnection(serviceName, serviceRegistrationInstance)).onFailure(throwable -> {
-                            log.error("Failed to remove connector [{} -> {}]", serviceName, serviceRegistrationInstance);
+                            log.debug("Failed to remove connector [{} -> {}]", serviceName, serviceRegistrationInstance);
                         });
                     });
                 }).onFailure(throwable -> serverWebSocket.reject());
@@ -69,9 +69,9 @@ class ListenerServerHandler extends AbstractVerticle implements Handler<RoutingC
             ServiceRegistrationInfo serviceRegistrationInfo = (ServiceRegistrationInfo) GatewayUtils.getConnectorInfoMap(getVertx()).getOrDefault(serviceName, ServiceRegistrationInfo.builder().basePath("/" + serviceName).build());
             serviceRegistrationInfo.addTargetServer(serviceRegistrationInstance);
             GatewayUtils.getConnectorInfoMap(getVertx()).putIfAbsent(serviceName, serviceRegistrationInfo);
-            log.info("New instance for [{}] registered [{}]", serviceName, serviceRegistrationInstance);
+            log.debug("New instance for [{}] registered [{}]", serviceName, serviceRegistrationInstance);
             lock.release();
-        }).onFailure(throwable -> log.error("Failed to get Lock to add connector info", throwable)).mapEmpty();
+        }).onFailure(throwable -> log.debug("Failed to get Lock to add connector info", throwable)).mapEmpty();
     }
 
     private Future<Void> removeConnector(String serviceName, ServiceRegistrationInstance serviceRegistrationInstance) {
@@ -82,6 +82,6 @@ class ListenerServerHandler extends AbstractVerticle implements Handler<RoutingC
                 log.debug("Remove connection [{}] from {}:{}", serviceRegistrationInstance.getInstanceId(), serviceRegistrationInstance.getRemoteAddress(), serviceRegistrationInstance.getRemotePort());
             }
             lock.release();
-        }).onFailure(throwable -> log.error("Failed to get Lock to add connector info", throwable)).mapEmpty();
+        }).onFailure(throwable -> log.debug("Failed to get Lock to add connector info", throwable)).mapEmpty();
     }
 }

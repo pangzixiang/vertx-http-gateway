@@ -45,12 +45,12 @@ public class VertxHttpGatewayConnector {
                     promise.complete();
                 } else {
                     String err = "Failed to register shutdown eventbus";
-                    log.error(err, result.cause());
+                    log.debug(err, result.cause());
                     promise.fail(err);
                 }
             });
         }).onFailure(throwable -> {
-            log.error("Failed to deploy vertx http gateway connector main verticle", throwable);
+            log.debug("Failed to deploy vertx http gateway connector main verticle", throwable);
             promise.fail(throwable);
         });
 

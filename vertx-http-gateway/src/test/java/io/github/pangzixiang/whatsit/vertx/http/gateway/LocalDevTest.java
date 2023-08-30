@@ -15,6 +15,7 @@ import io.vertx.ext.web.RoutingContext;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class LocalDevTest {
@@ -89,6 +90,16 @@ public class LocalDevTest {
                log.info("connection closed");
                vertx.cancelTimer(id);
             });
+        });
+
+        router.get("/test-service/timeout").handler(rc -> {
+           vertx.setTimer(TimeUnit.SECONDS.toMillis(20), l -> {
+               rc.end("test");
+           });
+
+           rc.response().closeHandler(unused -> {
+               log.info("connection closed");
+           });
         });
 
         router.get("/test-service").handler(rc -> {

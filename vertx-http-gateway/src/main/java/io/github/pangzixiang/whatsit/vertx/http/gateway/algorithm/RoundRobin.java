@@ -20,11 +20,11 @@ public class RoundRobin implements LoadBalanceAlgorithm {
                 int index = (int) ((now + 1) % serviceRegistrationInfo.getServiceRegistrationInstances().size());
                 return Future.succeededFuture(serviceRegistrationInfo.getServiceRegistrationInstances().get(index));
             }, throwable -> {
-                log.error("Failed to get counter for Round Robin, hence default return the first origin", throwable);
+                log.debug("Failed to get counter for Round Robin, hence default return the first origin", throwable);
                 return Future.succeededFuture(serviceRegistrationInfo.getServiceRegistrationInstances().get(0));
             });
         }, throwable -> {
-            log.error("Failed to get counter for Round Robin, hence default return the first origin", throwable);
+            log.debug("Failed to get counter for Round Robin, hence default return the first origin", throwable);
             return Future.succeededFuture(serviceRegistrationInfo.getServiceRegistrationInstances().get(0));
         });
     }

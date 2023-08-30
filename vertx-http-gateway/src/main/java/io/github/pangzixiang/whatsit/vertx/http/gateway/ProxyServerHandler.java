@@ -64,7 +64,7 @@ class ProxyServerHandler extends AbstractVerticle implements Handler<RoutingCont
     }
 
     private void handleProxyWebsocketRequest(RoutingContext routingContext, ServiceRegistrationInstance serviceRegistrationInstance, long requestId) {
-        log.info("Start to proxy websocket request [{} {} {}] from {} to {}:{} in instance [{}] (requestId={})", routingContext.request().version(), routingContext.request().method(), routingContext.request().uri(), routingContext.request().remoteAddress(),
+        log.debug("Start to proxy websocket request [{} {} {}] from {} to {}:{} in instance [{}] (requestId={})", routingContext.request().version(), routingContext.request().method(), routingContext.request().uri(), routingContext.request().remoteAddress(),
                 serviceRegistrationInstance.getRemoteAddress(), serviceRegistrationInstance.getRemotePort(), serviceRegistrationInstance.getInstanceId(), requestId);
         Buffer firstChunk = MessageChunk.build(MessageChunkType.INFO, requestId, buildFirstProxyRequestChunkBody(routingContext.request()));
         getVertx().eventBus().send(serviceRegistrationInstance.getEventBusAddress(), firstChunk);
@@ -109,8 +109,14 @@ class ProxyServerHandler extends AbstractVerticle implements Handler<RoutingCont
     }
 
     private void handleProxyHttpRequest(RoutingContext routingContext, ServiceRegistrationInstance serviceRegistrationInstance, long requestId) {
-        log.info("Start to proxy http request [{} {} {}] from {} to {}:{} in instance [{}] (requestId={})", routingContext.request().version(), routingContext.request().method(), routingContext.request().uri(), routingContext.request().remoteAddress(),
+        log.debug("Start to proxy http request [{} {} {}] from {} to {}:{} in instance [{}] (requestId={})", routingContext.request().version(), routingContext.request().method(), routingContext.request().uri(), routingContext.request().remoteAddress(),
                 serviceRegistrationInstance.getRemoteAddress(), serviceRegistrationInstance.getRemotePort(), serviceRegistrationInstance.getInstanceId(), requestId);
+
+        long timeoutChecker = getVertx().setTimer(vertxHttpGatewayOptions.getProxyTimeout(), l -> {
+            log.debug("Failed to proxy request [{} {} {}] from {} to {}:{} in instance [{}] (requestId={}) due to no message from connector", routingContext.request().version(), routingContext.request().method(), routingContext.request().uri(), routingContext.request().remoteAddress(),
+                    serviceRegistrationInstance.getRemoteAddress(), serviceRegistrationInstance.getRemotePort(), serviceRegistrationInstance.getInstanceId(), requestId);
+            routingContext.fail(HttpResponseStatus.GATEWAY_TIMEOUT.code());
+        });
 
         MessageConsumer<Object> requestConsumer = getVertx().eventBus().consumer(getProxyRequestEventBusAddress(requestId)).handler(message -> {
             Buffer chunk = (Buffer) message.body();
@@ -119,6 +125,7 @@ class ProxyServerHandler extends AbstractVerticle implements Handler<RoutingCont
 
             byte chunkType = messageChunk.getChunkType();
             if (Objects.equals(chunkType, MessageChunkType.INFO.getFlag())) {
+                getVertx().cancelTimer(timeoutChecker);
                 String responseInfoChunkBody = messageChunk.getChunkBody().toString();
                 ResponseMessageInfoChunkBody responseMessageInfoChunkBody = new ResponseMessageInfoChunkBody(responseInfoChunkBody);
                 routingContext.response().setStatusCode(responseMessageInfoChunkBody.getStatusCode()).setStatusMessage(responseMessageInfoChunkBody.getStatusMessage());
@@ -135,21 +142,15 @@ class ProxyServerHandler extends AbstractVerticle implements Handler<RoutingCont
             }
 
             if (Objects.equals(chunkType, MessageChunkType.ERROR.getFlag())) {
-                log.info("Failed to proxy request [{} {} {}] from {} to {}:{} in instance [{}] (requestId={}) due to {}", routingContext.request().version(), routingContext.request().method(), routingContext.request().uri(), routingContext.request().remoteAddress(),
+                log.debug("Failed to proxy request [{} {} {}] from {} to {}:{} in instance [{}] (requestId={}) due to {}", routingContext.request().version(), routingContext.request().method(), routingContext.request().uri(), routingContext.request().remoteAddress(),
                         serviceRegistrationInstance.getRemoteAddress(), serviceRegistrationInstance.getRemotePort(), serviceRegistrationInstance.getInstanceId(), requestId, messageChunk.getChunkBody());
                 routingContext.response().setStatusCode(HttpResponseStatus.BAD_GATEWAY.code()).end("Failed to proxy request due to target server error [%s] (requestId=%s)".formatted(messageChunk.getChunkBody(), requestId));
             }
 
             if (Objects.equals(chunkType, MessageChunkType.ENDING.getFlag())) {
                 routingContext.response().end();
-                log.info("Succeeded to proxy request [{} {} {}] from {} to {}:{} in instance [{}] (requestId={})", routingContext.request().version(), routingContext.request().method(), routingContext.request().uri(), routingContext.request().remoteAddress(),
+                log.debug("Succeeded to proxy request [{} {} {}] from {} to {}:{} in instance [{}] (requestId={})", routingContext.request().version(), routingContext.request().method(), routingContext.request().uri(), routingContext.request().remoteAddress(),
                         serviceRegistrationInstance.getRemoteAddress(), serviceRegistrationInstance.getRemotePort(), serviceRegistrationInstance.getInstanceId(), requestId);
-            }
-        });
-
-        long timeoutChecker = getVertx().setTimer(vertxHttpGatewayOptions.getProxyTimeout(), l -> {
-            if (!routingContext.response().ended() && !routingContext.response().isChunked() && routingContext.response().bytesWritten() == 0) {
-                routingContext.fail(HttpResponseStatus.GATEWAY_TIMEOUT.code());
             }
         });
 
