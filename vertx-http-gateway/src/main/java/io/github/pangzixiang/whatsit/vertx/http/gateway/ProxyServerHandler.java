@@ -179,7 +179,7 @@ class ProxyServerHandler extends AbstractVerticle implements Handler<RoutingCont
         HttpMethod requestMethod = request.method();
         String requestUri = request.uri();
         MultiMap requestHeaders = request.headers();
-        return RequestMessageInfoChunkBody.build(request.version(), requestMethod, requestUri, request.query(), requestHeaders);
+        return RequestMessageInfoChunkBody.build(request.version(), requestMethod, requestUri, requestHeaders);
     }
 
     private Future<ServiceRegistrationInstance> resolveTargetServer(HttpServerRequest httpServerRequest, ServiceRegistrationInfo serviceRegistrationInfo) {

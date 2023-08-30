@@ -39,9 +39,8 @@ public class RequestMessageInfoChunkBody {
         }
     }
 
-    public static String build(HttpVersion httpVersion, HttpMethod httpMethod, String uri, String query, MultiMap headers) {
-        String requestQuery = query == null ? "" : "?" + query;
-        String firstLine = httpVersion.alpnName() + " " + httpMethod.name() + " " + uri + requestQuery + System.lineSeparator();
+    public static String build(HttpVersion httpVersion, HttpMethod httpMethod, String uri, MultiMap headers) {
+        String firstLine = httpVersion.alpnName() + " " + httpMethod.name() + " " + uri + System.lineSeparator();
         StringBuilder result = new StringBuilder(firstLine);
         headers.forEach((key, value) -> {
             result.append(key).append(":").append(value).append(System.lineSeparator());
