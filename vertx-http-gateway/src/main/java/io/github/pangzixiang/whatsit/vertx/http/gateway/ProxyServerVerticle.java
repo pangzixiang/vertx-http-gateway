@@ -34,9 +34,9 @@ class ProxyServerVerticle extends AbstractVerticle {
                 .requestHandler(router)
                 .listen(vertxHttpGatewayOptions.getProxyServerPort())
                 .onSuccess(httpServer -> {
-                    log.info("Proxy Server Started at {}", httpServer.actualPort());
+                    log.debug("Proxy Server Started at {}", httpServer.actualPort());
                 }).onFailure(throwable -> {
-                    log.error("Failed to start Proxy Server", throwable);
+                    log.debug("Failed to start Proxy Server", throwable);
                 });
 
         Future.all(deployVerticle, httpServerFuture)

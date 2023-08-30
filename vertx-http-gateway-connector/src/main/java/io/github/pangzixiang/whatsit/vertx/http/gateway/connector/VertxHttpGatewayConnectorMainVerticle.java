@@ -31,7 +31,7 @@ class VertxHttpGatewayConnectorMainVerticle extends AbstractVerticle {
             log.debug("Succeeded to start vertx http gateway connector");
             startPromise.complete();
         }).onFailure(throwable -> {
-            log.error("Failed to start vertx http gateway connector", throwable);
+            log.debug("Failed to start vertx http gateway connector", throwable);
             startPromise.fail(throwable);
         });
     }
@@ -44,7 +44,7 @@ class VertxHttpGatewayConnectorMainVerticle extends AbstractVerticle {
                 registerClient.webSocket(options)
                         .onSuccess(ws -> {
                             getVertx().cancelTimer(id);
-                            log.info("Succeeded to register to vertx http gateway [{}:{}{}]!", options.getHost(), options.getPort(), options.getURI());
+                            log.debug("Succeeded to register to vertx http gateway [{}:{}{}]!", options.getHost(), options.getPort(), options.getURI());
                             promise.complete();
                             eventHandler.afterEstablishConnection(ws);
                             ws.closeHandler(unused -> {
@@ -55,7 +55,7 @@ class VertxHttpGatewayConnectorMainVerticle extends AbstractVerticle {
                             vertxHttpGatewayConnectorHandler.handle(ws);
                         })
                         .onFailure(throwable -> {
-                            log.error("Failed to register to vertx http gateway [{}:{}{}]! (error={})", options.getHost(), options.getPort(), options.getURI(), throwable.getMessage());
+                            log.debug("Failed to register to vertx http gateway [{}:{}{}]! (error={})", options.getHost(), options.getPort(), options.getURI(), throwable.getMessage());
                         });
             }).onFailure(throwable -> {
                 getVertx().cancelTimer(id);
