@@ -33,7 +33,7 @@
         <vertx.version>4.4.5</vertx.version>
         <commons-lang3.version>3.13.0</commons-lang3.version>
         <logback.version>1.4.11</logback.version>
-        <slf4j.version>2.0.7</slf4j.version>
+        <slf4j.version>2.0.9</slf4j.version>
         <lombok.version>1.18.28</lombok.version>
 
         <maven-scm-plugin.version>2.0.1</maven-scm-plugin.version>
