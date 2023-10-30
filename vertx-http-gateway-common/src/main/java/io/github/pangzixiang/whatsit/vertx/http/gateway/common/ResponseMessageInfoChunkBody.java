@@ -18,7 +18,7 @@ public class ResponseMessageInfoChunkBody {
      * [headers]
      */
     public ResponseMessageInfoChunkBody(String responseInfoChunkBody) {
-        String[] chunkLines = responseInfoChunkBody.split(System.lineSeparator());
+        String[] chunkLines = responseInfoChunkBody.split(Utils.lineSeparator);
         String[] firstLine = chunkLines[0].split(" ");
         this.httpVersion = Utils.httpVersionParser(firstLine[0]);
         this.statusMessage = String.join(" ", Arrays.asList(firstLine).subList(2, firstLine.length));
@@ -34,10 +34,10 @@ public class ResponseMessageInfoChunkBody {
      * [headers]
      */
     public static String build(HttpVersion httpVersion, String statusMessage, int statusCode, MultiMap headers) {
-        String firstLine = httpVersion.alpnName() + " " + statusCode + " " + statusMessage + System.lineSeparator();
+        String firstLine = httpVersion.alpnName() + " " + statusCode + " " + statusMessage + Utils.lineSeparator;
         StringBuilder result = new StringBuilder(firstLine);
         headers.forEach((key, value) -> {
-            result.append(key).append(":").append(value).append(System.lineSeparator());
+            result.append(key).append(":").append(value).append(Utils.lineSeparator);
         });
 
         return result.toString();
