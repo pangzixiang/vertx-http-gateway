@@ -21,7 +21,7 @@ public class ResponseMessageInfoChunkBody {
         String[] chunkLines = responseInfoChunkBody.split(Utils.lineSeparator);
         String[] firstLine = chunkLines[0].split(" ");
         this.httpVersion = Utils.httpVersionParser(firstLine[0]);
-        this.statusMessage = String.join(" ", Arrays.asList(firstLine).subList(2, firstLine.length));
+        this.statusMessage = String.join(" ", Arrays.asList(firstLine).subList(2, firstLine.length)).replaceAll("[\n\r]", "");
         this.statusCode = Integer.parseInt(firstLine[1]);
         for (int i = 1; i < chunkLines.length; i++) {
             String[] line = chunkLines[i].split(":");
