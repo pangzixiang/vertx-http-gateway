@@ -38,9 +38,9 @@ public class VertxHttpGatewayMainVerticle extends AbstractVerticle {
     @Override
     public void start(Promise<Void> startPromise) throws Exception {
         Future<String> listenerServerFuture = getVertx().deployVerticle(() -> new ListenerServerVerticle(vertxHttpGatewayOptions, eventHandler),
-                new DeploymentOptions().setInstances(vertxHttpGatewayOptions.getListenerServerInstance()));
+                new DeploymentOptions().setThreadingModel(ThreadingModel.VIRTUAL_THREAD).setInstances(vertxHttpGatewayOptions.getListenerServerInstance()));
 
         listenerServerFuture.compose(unused -> getVertx().deployVerticle(() -> new ProxyServerVerticle(vertxHttpGatewayOptions, eventHandler, customRouter),
-                new DeploymentOptions().setInstances(vertxHttpGatewayOptions.getProxyServerInstance()))).onSuccess(unused -> startPromise.complete()).onFailure(startPromise::fail);
+                new DeploymentOptions().setThreadingModel(ThreadingModel.VIRTUAL_THREAD).setInstances(vertxHttpGatewayOptions.getProxyServerInstance()))).onSuccess(unused -> startPromise.complete()).onFailure(startPromise::fail);
     }
 }

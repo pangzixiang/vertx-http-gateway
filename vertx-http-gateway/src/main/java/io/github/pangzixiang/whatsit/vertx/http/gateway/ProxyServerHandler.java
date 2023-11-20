@@ -14,10 +14,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.eventbus.MessageConsumer;
-import io.vertx.core.http.HttpHeaders;
-import io.vertx.core.http.HttpMethod;
-import io.vertx.core.http.HttpServerRequest;
-import io.vertx.core.http.HttpVersion;
+import io.vertx.core.http.*;
 import io.vertx.ext.web.RoutingContext;
 import lombok.extern.slf4j.Slf4j;
 
@@ -43,21 +40,18 @@ class ProxyServerHandler extends AbstractVerticle implements Handler<RoutingCont
 
         ServiceRegistrationInfo serviceRegistrationInfo = (ServiceRegistrationInfo) GatewayUtils.getConnectorInfoMap(getVertx()).get(base);
         if (serviceRegistrationInfo != null && !serviceRegistrationInfo.getServiceRegistrationInstances().isEmpty()) {
-
-            Future<ServiceRegistrationInstance> serviceRegistrationInstanceFuture = resolveTargetServer(routingContext.request(), serviceRegistrationInfo);
-
-            serviceRegistrationInstanceFuture.onSuccess(serviceRegistrationInstance -> {
-
-                GatewayUtils.generateRequestId(getVertx()).onSuccess(requestId -> {
-                    eventHandler.beforeProxyRequest(requestId, routingContext.request(), serviceRegistrationInstance).onSuccess(u -> {
-                        if (isWebsocket(routingContext.request().version(), routingContext.request().method(), routingContext.request().headers())) {
-                            handleProxyWebsocketRequest(routingContext, serviceRegistrationInstance, requestId);
-                        } else {
-                            handleProxyHttpRequest(routingContext, serviceRegistrationInstance, requestId);
-                        }
-                    }).onFailure(routingContext::fail);
-                }).onFailure(routingContext::fail);
-            }).onFailure(routingContext::fail);
+            try {
+                ServiceRegistrationInstance serviceRegistrationInstance = Future.await(resolveTargetServer(routingContext.request(), serviceRegistrationInfo));
+                Long requestId = Future.await(GatewayUtils.generateRequestId(getVertx()));
+                Future.await(eventHandler.beforeProxyRequest(requestId, routingContext.request(), serviceRegistrationInstance));
+                if (isWebsocket(routingContext.request().version(), routingContext.request().method(), routingContext.request().headers())) {
+                    handleProxyWebsocketRequest(routingContext, serviceRegistrationInstance, requestId);
+                } else {
+                    handleProxyHttpRequest(routingContext, serviceRegistrationInstance, requestId);
+                }
+            } catch (Throwable throwable) {
+                routingContext.fail(throwable);
+            }
         } else {
             routingContext.fail(HttpResponseStatus.NOT_FOUND.code());
         }
@@ -69,8 +63,8 @@ class ProxyServerHandler extends AbstractVerticle implements Handler<RoutingCont
         Buffer firstChunk = MessageChunk.build(MessageChunkType.INFO, requestId, buildFirstProxyRequestChunkBody(routingContext.request()));
         getVertx().eventBus().send(serviceRegistrationInstance.getEventBusAddress(), firstChunk);
 
-        routingContext.request().toWebSocket().onSuccess(serverWebsocket -> {
-
+        try {
+            ServerWebSocket serverWebSocket = Future.await(routingContext.request().toWebSocket());
             MessageConsumer<Object> requestConsumer = getVertx().eventBus().consumer(getProxyRequestEventBusAddress(requestId)).handler(message -> {
                 Buffer chunk = (Buffer) message.body();
                 MessageChunk messageChunk = new MessageChunk(chunk);
@@ -79,33 +73,36 @@ class ProxyServerHandler extends AbstractVerticle implements Handler<RoutingCont
                 if (chunkType == MessageChunkType.BODY.getFlag()) {
                     Buffer chunkBody = messageChunk.getChunkBody();
                     if (chunkBody.getByte(0) == (byte) 0) {
-                        serverWebsocket.writeTextMessage(chunkBody.getString(1, chunkBody.length()));
+                        Future.await(serverWebSocket.writeTextMessage(chunkBody.getString(1, chunkBody.length())));
                     } else {
-                        serverWebsocket.writeBinaryMessage(chunkBody.getBuffer(1, chunkBody.length()));
+                        Future.await(serverWebSocket.writeBinaryMessage(chunkBody.getBuffer(1, chunkBody.length())));
                     }
                 }
 
                 if (chunkType == MessageChunkType.CLOSED.getFlag()) {
-                    serverWebsocket.close();
+                    Future.await(serverWebSocket.close());
                 }
+
             });
 
-            serverWebsocket.textMessageHandler(textMessage -> {
+            serverWebSocket.textMessageHandler(textMessage -> {
                 Buffer bodyChunk = MessageChunk.build(MessageChunkType.BODY, requestId, Buffer.buffer().appendByte((byte) 0).appendString(textMessage));
                 getVertx().eventBus().send(serviceRegistrationInstance.getEventBusAddress(), bodyChunk);
             });
 
-            serverWebsocket.binaryMessageHandler(bufferMessage -> {
+            serverWebSocket.binaryMessageHandler(bufferMessage -> {
                 Buffer bodyChunk = MessageChunk.build(MessageChunkType.BODY, requestId, Buffer.buffer().appendByte((byte) 1).appendBuffer(bufferMessage));
                 getVertx().eventBus().send(serviceRegistrationInstance.getEventBusAddress(), bodyChunk);
             });
 
-            serverWebsocket.closeHandler(unused -> {
-                requestConsumer.unregister();
+            serverWebSocket.closeHandler(unused -> {
+                Future.await(requestConsumer.unregister());
                 Buffer endChunk = MessageChunk.build(MessageChunkType.CLOSED, requestId);
                 getVertx().eventBus().send(serviceRegistrationInstance.getEventBusAddress(), endChunk);
             });
-        }).onFailure(routingContext::fail);
+        } catch (Throwable throwable) {
+            routingContext.fail(throwable);
+        }
     }
 
     private void handleProxyHttpRequest(RoutingContext routingContext, ServiceRegistrationInstance serviceRegistrationInstance, long requestId) {
@@ -138,17 +135,17 @@ class ProxyServerHandler extends AbstractVerticle implements Handler<RoutingCont
             }
 
             if (Objects.equals(chunkType, MessageChunkType.BODY.getFlag())) {
-                routingContext.response().write(messageChunk.getChunkBody());
+                Future.await(routingContext.response().write(messageChunk.getChunkBody()));
             }
 
             if (Objects.equals(chunkType, MessageChunkType.ERROR.getFlag())) {
                 log.debug("Failed to proxy request [{} {} {}] from {} to {}:{} in instance [{}] (requestId={}) due to {}", routingContext.request().version(), routingContext.request().method(), routingContext.request().uri(), routingContext.request().remoteAddress(),
                         serviceRegistrationInstance.getRemoteAddress(), serviceRegistrationInstance.getRemotePort(), serviceRegistrationInstance.getInstanceId(), requestId, messageChunk.getChunkBody());
-                routingContext.response().setStatusCode(HttpResponseStatus.BAD_GATEWAY.code()).end("Failed to proxy request due to target server error [%s] (requestId=%s)".formatted(messageChunk.getChunkBody(), requestId));
+                Future.await(routingContext.response().setStatusCode(HttpResponseStatus.BAD_GATEWAY.code()).end("Failed to proxy request due to target server error [%s] (requestId=%s)".formatted(messageChunk.getChunkBody(), requestId)));
             }
 
             if (Objects.equals(chunkType, MessageChunkType.ENDING.getFlag())) {
-                routingContext.response().end();
+                Future.await(routingContext.response().end());
                 log.debug("Succeeded to proxy request [{} {} {}] from {} to {}:{} in instance [{}] (requestId={})", routingContext.request().version(), routingContext.request().method(), routingContext.request().uri(), routingContext.request().remoteAddress(),
                         serviceRegistrationInstance.getRemoteAddress(), serviceRegistrationInstance.getRemotePort(), serviceRegistrationInstance.getInstanceId(), requestId);
             }
@@ -157,7 +154,7 @@ class ProxyServerHandler extends AbstractVerticle implements Handler<RoutingCont
         routingContext.response().endHandler(unused -> {
             getVertx().eventBus().send(serviceRegistrationInstance.getEventBusAddress(), MessageChunk.build(MessageChunkType.CLOSED, requestId));
             getVertx().cancelTimer(timeoutChecker);
-            requestConsumer.unregister();
+            Future.await(requestConsumer.unregister());
             eventHandler.afterProxyRequest(requestId, routingContext.request(), serviceRegistrationInstance);
         });
 
