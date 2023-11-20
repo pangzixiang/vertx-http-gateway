@@ -1,9 +1,7 @@
 package io.github.pangzixiang.whatsit.vertx.http.gateway;
 
 import io.github.pangzixiang.whatsit.vertx.http.gateway.handler.EventHandler;
-import io.vertx.core.AbstractVerticle;
-import io.vertx.core.Future;
-import io.vertx.core.Promise;
+import io.vertx.core.*;
 import io.vertx.core.http.HttpServer;
 import io.vertx.ext.web.Router;
 import lombok.AllArgsConstructor;
@@ -26,22 +24,15 @@ class ProxyServerVerticle extends AbstractVerticle {
         }
 
         ProxyServerHandler proxyServerHandler = new ProxyServerHandler(vertxHttpGatewayOptions, eventHandler);
-        Future<String> deployVerticle = getVertx().deployVerticle(proxyServerHandler);
+        Future.await(getVertx().deployVerticle(proxyServerHandler, new DeploymentOptions().setThreadingModel(ThreadingModel.VIRTUAL_THREAD)));
 
         router.route("/:base*").handler(proxyServerHandler);
 
-        Future<HttpServer> httpServerFuture = getVertx().createHttpServer(vertxHttpGatewayOptions.getProxyServerOptions())
+        HttpServer httpServer = Future.await(getVertx().createHttpServer(vertxHttpGatewayOptions.getProxyServerOptions())
                 .requestHandler(router)
-                .listen(vertxHttpGatewayOptions.getProxyServerPort())
-                .onSuccess(httpServer -> {
-                    log.debug("Proxy Server Started at {}", httpServer.actualPort());
-                }).onFailure(throwable -> {
-                    log.debug("Failed to start Proxy Server", throwable);
-                });
+                .listen(vertxHttpGatewayOptions.getProxyServerPort()));
 
-        Future.all(deployVerticle, httpServerFuture)
-                .onSuccess(unused -> startPromise.complete())
-                .onFailure(startPromise::fail);
+        log.debug("Proxy Server Started at {}", httpServer.actualPort());
     }
 
 

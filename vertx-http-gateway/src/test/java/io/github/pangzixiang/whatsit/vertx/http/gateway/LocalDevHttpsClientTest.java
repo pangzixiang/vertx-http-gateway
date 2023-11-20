@@ -7,6 +7,7 @@ import io.netty.handler.codec.http.HttpHeaderValues;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.http.WebSocketClientOptions;
 import io.vertx.ext.web.Router;
 import lombok.extern.slf4j.Slf4j;
 
@@ -42,7 +43,7 @@ public class LocalDevHttpsClientTest {
                 .listen(0)
                 .onSuccess(httpServer -> {
                     log.info("Succeeded to start test server in port {}", httpServer.actualPort());
-                    HttpClientOptions registerClientOptions = new HttpClientOptions()
+                    WebSocketClientOptions registerClientOptions = new WebSocketClientOptions()
                             .setSsl(true).setTrustAll(true)
                             ;
                     VertxHttpGatewayConnectorOptions vertxHttpGatewayConnectorOptions =

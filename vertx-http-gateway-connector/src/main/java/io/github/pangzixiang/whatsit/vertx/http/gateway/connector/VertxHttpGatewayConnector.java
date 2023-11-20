@@ -2,10 +2,7 @@ package io.github.pangzixiang.whatsit.vertx.http.gateway.connector;
 
 import io.github.pangzixiang.whatsit.vertx.http.gateway.connector.handler.DefaultEventHandler;
 import io.github.pangzixiang.whatsit.vertx.http.gateway.connector.handler.EventHandler;
-import io.vertx.core.DeploymentOptions;
-import io.vertx.core.Future;
-import io.vertx.core.Promise;
-import io.vertx.core.Vertx;
+import io.vertx.core.*;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.UUID;
@@ -32,7 +29,7 @@ public class VertxHttpGatewayConnector {
 
     public Future<Void> connect() {
         Promise<Void> promise = Promise.promise();
-        vertx.deployVerticle(() -> new VertxHttpGatewayConnectorMainVerticle(vertxHttpGatewayConnectorOptions, eventHandler), new DeploymentOptions().setInstances(vertxHttpGatewayConnectorOptions.getInstance())).onSuccess(id -> {
+        vertx.deployVerticle(() -> new VertxHttpGatewayConnectorMainVerticle(vertxHttpGatewayConnectorOptions, eventHandler), new DeploymentOptions().setThreadingModel(ThreadingModel.VIRTUAL_THREAD).setInstances(vertxHttpGatewayConnectorOptions.getInstance())).onSuccess(id -> {
             vertx.eventBus().consumer(CLOSE_EVENT_BUS_ID).handler(message -> {
                 eventHandler.beforeDisconnect();
                 vertx.undeploy(id).onComplete(result -> {

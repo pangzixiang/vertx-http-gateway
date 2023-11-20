@@ -1,9 +1,7 @@
 package io.github.pangzixiang.whatsit.vertx.http.gateway;
 
 import io.github.pangzixiang.whatsit.vertx.http.gateway.handler.EventHandler;
-import io.vertx.core.AbstractVerticle;
-import io.vertx.core.Future;
-import io.vertx.core.Promise;
+import io.vertx.core.*;
 import io.vertx.core.http.HttpServer;
 import io.vertx.ext.web.Router;
 import lombok.AllArgsConstructor;
@@ -15,24 +13,20 @@ class ListenerServerVerticle extends AbstractVerticle {
     private final VertxHttpGatewayOptions vertxHttpGatewayOptions;
     private final EventHandler eventHandler;
     @Override
-    public void start(Promise<Void> startPromise) throws Exception {
+    public void start() throws Exception {
         Router router = Router.router(getVertx());
 
         ListenerServerHandler listenerServerHandler = new ListenerServerHandler(eventHandler);
 
-        Future<String> deployFuture = getVertx().deployVerticle(listenerServerHandler);
+        Future.await(getVertx().deployVerticle(listenerServerHandler, new DeploymentOptions().setThreadingModel(ThreadingModel.VIRTUAL_THREAD)));
 
         router.route(vertxHttpGatewayOptions.getListenerServerRegisterPath()).handler(listenerServerHandler);
 
-        Future<HttpServer> httpServerFuture = getVertx().createHttpServer(vertxHttpGatewayOptions.getListenerServerOptions())
+        HttpServer httpServer = Future.await(getVertx().createHttpServer(vertxHttpGatewayOptions.getListenerServerOptions())
                 .requestHandler(router)
-                .listen(vertxHttpGatewayOptions.getListenerServerPort())
-                .onSuccess(httpServer -> log.debug("Listener Server Started at {}", httpServer.actualPort()))
-                .onFailure(throwable -> log.debug("Failed to start Listener Server", throwable));
+                .listen(vertxHttpGatewayOptions.getListenerServerPort()));
 
-        Future.all(deployFuture, httpServerFuture)
-                .onSuccess(unused -> startPromise.complete())
-                .onFailure(startPromise::fail);
+        log.debug("Listener Server Started at {}", httpServer.actualPort());
     }
 
 
