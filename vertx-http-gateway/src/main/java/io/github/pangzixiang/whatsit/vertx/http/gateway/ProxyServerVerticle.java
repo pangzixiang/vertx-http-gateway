@@ -16,7 +16,7 @@ class ProxyServerVerticle extends AbstractVerticle {
     private final Router customRouter;
 
     @Override
-    public void start(Promise<Void> startPromise) throws Exception {
+    public void start() throws Exception {
         Router router = Router.router(getVertx());
 
         if (customRouter != null) {
