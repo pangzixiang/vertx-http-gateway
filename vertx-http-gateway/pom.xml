@@ -4,13 +4,13 @@
     <parent>
         <groupId>io.github.pangzixiang.whatsit</groupId>
         <artifactId>vertx-http-gateway-parent</artifactId>
-        <version>1.2.2-SNAPSHOT</version>
+        <version>1.2.2</version>
     </parent>
 
     <artifactId>vertx-http-gateway</artifactId>
     <name>vertx-http-gateway</name>
     <description>Load-Balancing HTTP Gateway for Vert.x</description>
-    <version>1.2.2-SNAPSHOT</version>
+    <version>1.2.2</version>
     <url>https://github.com/pangzixiang/vertx-http-gateway</url>
 
     <developers>
@@ -36,12 +36,12 @@
         <dependency>
             <groupId>io.github.pangzixiang.whatsit</groupId>
             <artifactId>vertx-http-gateway-common</artifactId>
-            <version>1.2.2-SNAPSHOT</version>
+            <version>1.2.2</version>
         </dependency>
         <dependency>
             <groupId>io.github.pangzixiang.whatsit</groupId>
             <artifactId>vertx-http-gateway-connector</artifactId>
-            <version>1.2.2-SNAPSHOT</version>
+            <version>1.2.2</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -61,6 +61,6 @@
         <url>https://github.com/pangzixiang/vertx-http-gateway.git</url>
         <developerConnection>scm:git:https://github.com/pangzixiang/vertx-http-gateway</developerConnection>
         <connection>scm:git:https://github.com/pangzixiang/vertx-http-gateway</connection>
-      <tag>HEAD</tag>
+      <tag>v1.2.2</tag>
   </scm>
 </project>
