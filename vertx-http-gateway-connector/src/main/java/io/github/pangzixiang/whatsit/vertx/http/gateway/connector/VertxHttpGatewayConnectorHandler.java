@@ -146,7 +146,7 @@ class VertxHttpGatewayConnectorHandler extends AbstractVerticle implements Handl
     private void handleProxyHttpRequest(WebSocket webSocket, ProxyRequestContext proxyRequestContext) {
         HttpClientRequest httpClientRequest;
         try {
-            httpClientRequest = Future.await(proxyClient.request(proxyRequestContext.getRequestHttpMethod(), vertxHttpGatewayConnectorOptions.getServicePort(), vertxHttpGatewayConnectorOptions.getServiceHost(), proxyRequestContext.getRequestUri()));
+            httpClientRequest = Future.await(proxyClient.request(proxyRequestContext.getRequestHttpMethod(), vertxHttpGatewayConnectorOptions.getServicePort(), vertxHttpGatewayConnectorOptions.getServiceHost(), vertxHttpGatewayConnectorOptions.getBasePathConvert().apply(proxyRequestContext.getRequestUri())));
         } catch (Throwable throwable) {
             log.debug("Failed to send request for {} {}:{}{}", proxyRequestContext.getRequestHttpMethod(), vertxHttpGatewayConnectorOptions.getServiceHost(),
                     vertxHttpGatewayConnectorOptions.getServicePort(), proxyRequestContext.getRequestUri(), throwable);

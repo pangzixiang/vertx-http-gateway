@@ -5,6 +5,7 @@ import io.vertx.core.http.WebSocketClientOptions;
 import lombok.Getter;
 
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 @Getter
 public class VertxHttpGatewayConnectorOptions {
@@ -18,6 +19,7 @@ public class VertxHttpGatewayConnectorOptions {
     private HttpClientOptions proxyClientOptions;
     private int instance;
     private long connectionRetryIntervalInMillis;
+    private Function<String, String> basePathConvert;
 
     private static final HttpClientOptions DEFAULT_PROXY_CLIENT_OPTIONS = new HttpClientOptions();
 
@@ -32,6 +34,7 @@ public class VertxHttpGatewayConnectorOptions {
         this.proxyClientOptions = proxyClientOptions;
         this.instance = instance;
         this.connectionRetryIntervalInMillis = connectionRetryIntervalInMillis;
+        this.basePathConvert = basePath -> basePath;
     }
 
     public VertxHttpGatewayConnectorOptions(String serviceName, int servicePort, String listenerServerHost, int listenerServerPort) {
@@ -65,6 +68,11 @@ public class VertxHttpGatewayConnectorOptions {
 
     public VertxHttpGatewayConnectorOptions setConnectionRetryIntervalInMillis(long connectionRetryIntervalInMillis) {
         this.connectionRetryIntervalInMillis = connectionRetryIntervalInMillis;
+        return this;
+    }
+
+    public VertxHttpGatewayConnectorOptions setBasePathConvert(Function<String, String> basePathConvert) {
+        this.basePathConvert = basePathConvert;
         return this;
     }
 }
