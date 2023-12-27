@@ -3,15 +3,20 @@ package io.github.pangzixiang.whatsit.vertx.http.gateway.connector;
 import io.github.pangzixiang.whatsit.vertx.http.gateway.connector.handler.EventHandler;
 import io.vertx.core.*;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.core.http.*;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.UUID;
 
 @Slf4j
 class VertxHttpGatewayConnectorMainVerticle extends AbstractVerticle {
     private final VertxHttpGatewayConnectorOptions vertxHttpGatewayConnectorOptions;
     private final EventHandler eventHandler;
 
-    private Long waitPongTask;
+    private static final String EVENT_BUS_STATUS_CHECK = "status-check-" + UUID.randomUUID();
+
+    private Long timerId;
 
     public VertxHttpGatewayConnectorMainVerticle(VertxHttpGatewayConnectorOptions vertxHttpGatewayConnectorOptions, EventHandler eventHandler) {
         this.vertxHttpGatewayConnectorOptions = vertxHttpGatewayConnectorOptions;
@@ -50,6 +55,27 @@ class VertxHttpGatewayConnectorMainVerticle extends AbstractVerticle {
             }
             try {
                 WebSocket ws = Future.await(registerClient.connect(options));
+
+                MessageConsumer<Object> messageConsumerForStatusCheck = getVertx().eventBus().consumer(EVENT_BUS_STATUS_CHECK).handler(message -> {
+                    boolean isHealthy = (boolean) message.body();
+                    if (!isHealthy) {
+                        ws.close();
+                    } else {
+                        log.trace("connection is healthy");
+                    }
+                });
+
+                ws.closeHandler(unused -> {
+                    if (timerId != null) {
+                        getVertx().cancelTimer(timerId);
+                    }
+                    messageConsumerForStatusCheck.unregister();
+                    if (getVertx().deploymentIDs().contains(deploymentID())) {
+                        log.debug("Trigger reconnection...");
+                        register(registerClient, options, vertxHttpGatewayConnectorHandler);
+                    }
+                });
+
                 getVertx().cancelTimer(id);
                 log.debug("Succeeded to register to vertx http gateway [{}:{}{}]!", options.getHost(), options.getPort(), options.getURI());
                 promise.complete();
@@ -58,28 +84,26 @@ class VertxHttpGatewayConnectorMainVerticle extends AbstractVerticle {
 
                 ws.pongHandler(buffer -> {
                     log.trace("Received pong from server");
-                    if (waitPongTask != null) {
-                        getVertx().cancelTimer(waitPongTask);
+                    if (timerId != null) {
+                        getVertx().cancelTimer(timerId);
                     }
+                    getVertx().eventBus().send(EVENT_BUS_STATUS_CHECK, true);
                 });
 
-                long pingTaskId = getVertx().setPeriodic(0, 5000, l -> {
+                getVertx().setPeriodic(0, 10000, l -> {
                     log.trace("Send ping to server");
-                    waitPongTask = getVertx().setTimer(3000, l2 -> {
-                        log.error("Failed to get pong from server, will reconnect...");
-                        ws.close();
-                    });
-                    ws.writePing(Buffer.buffer("ping")).onFailure(throwable -> {
+
+                    ws.writePing(Buffer.buffer("ping")).onSuccess(unused -> {
+                        timerId = getVertx().setTimer(5000, l2 -> {
+                            log.error("Failed to get pong from server within 5s");
+                            getVertx().eventBus().send(EVENT_BUS_STATUS_CHECK, false);
+                        });
+                    }).onFailure(throwable -> {
                         log.error("Failed to send ping to server", throwable);
-                        ws.close();
+                        getVertx().eventBus().send(EVENT_BUS_STATUS_CHECK, false);
                     });
                 });
-                ws.closeHandler(unused -> {
-                    getVertx().cancelTimer(pingTaskId);
-                    if (getVertx().deploymentIDs().contains(deploymentID())) {
-                        register(registerClient, options, vertxHttpGatewayConnectorHandler);
-                    }
-                });
+
                 vertxHttpGatewayConnectorHandler.handle(ws);
             } catch (Throwable throwable) {
                 log.debug("Failed to register to vertx http gateway [{}:{}{}]! (error={})", options.getHost(), options.getPort(), options.getURI(), throwable.getMessage());
