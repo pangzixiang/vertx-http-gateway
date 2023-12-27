@@ -97,10 +97,12 @@ class VertxHttpGatewayConnectorMainVerticle extends AbstractVerticle {
                         timerId = getVertx().setTimer(5000, l2 -> {
                             log.error("Failed to get pong from server within 5s");
                             getVertx().eventBus().send(EVENT_BUS_STATUS_CHECK, false);
+                            getVertx().cancelTimer(l);
                         });
                     }).onFailure(throwable -> {
                         log.error("Failed to send ping to server", throwable);
                         getVertx().eventBus().send(EVENT_BUS_STATUS_CHECK, false);
+                        getVertx().cancelTimer(l);
                     });
                 });
 
