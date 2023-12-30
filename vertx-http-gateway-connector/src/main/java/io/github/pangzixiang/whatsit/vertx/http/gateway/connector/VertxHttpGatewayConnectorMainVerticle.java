@@ -3,19 +3,17 @@ package io.github.pangzixiang.whatsit.vertx.http.gateway.connector;
 import io.github.pangzixiang.whatsit.vertx.http.gateway.connector.handler.EventHandler;
 import io.vertx.core.*;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.core.http.*;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.UUID;
+import static io.github.pangzixiang.whatsit.vertx.http.gateway.connector.VertxHttpGatewayConnector.RESTART_EVENT_BUS_ID;
 
 @Slf4j
 class VertxHttpGatewayConnectorMainVerticle extends AbstractVerticle {
     private final VertxHttpGatewayConnectorOptions vertxHttpGatewayConnectorOptions;
     private final EventHandler eventHandler;
 
-    private static final String EVENT_BUS_STATUS_CHECK = "status-check-" + UUID.randomUUID();
-
+    private WebSocketClient registerClient;
     private Long timerId;
 
     public VertxHttpGatewayConnectorMainVerticle(VertxHttpGatewayConnectorOptions vertxHttpGatewayConnectorOptions, EventHandler eventHandler) {
@@ -25,7 +23,7 @@ class VertxHttpGatewayConnectorMainVerticle extends AbstractVerticle {
 
     @Override
     public void start() throws Exception {
-        WebSocketClient registerClient = getVertx().createWebSocketClient(vertxHttpGatewayConnectorOptions.getRegisterClientOptions());
+        registerClient = getVertx().createWebSocketClient(vertxHttpGatewayConnectorOptions.getRegisterClientOptions());
 
         WebSocketConnectOptions webSocketConnectOptions = new WebSocketConnectOptions();
         webSocketConnectOptions.setHost(vertxHttpGatewayConnectorOptions.getListenerServerHost());
@@ -36,12 +34,12 @@ class VertxHttpGatewayConnectorMainVerticle extends AbstractVerticle {
 
         Future.await(getVertx().deployVerticle(vertxHttpGatewayConnectorHandler, new DeploymentOptions().setThreadingModel(ThreadingModel.VIRTUAL_THREAD)));
 
-        Future.await(register(registerClient, webSocketConnectOptions, vertxHttpGatewayConnectorHandler));
+        Future.await(register(webSocketConnectOptions, vertxHttpGatewayConnectorHandler));
 
         log.debug("Succeeded to start vertx http gateway connector");
     }
 
-    private Future<Void> register(WebSocketClient registerClient, WebSocketConnectOptions webSocketConnectOptions, VertxHttpGatewayConnectorHandler vertxHttpGatewayConnectorHandler) {
+    private Future<Void> register(WebSocketConnectOptions webSocketConnectOptions, VertxHttpGatewayConnectorHandler vertxHttpGatewayConnectorHandler) {
         Promise<Void> promise = Promise.promise();
         getVertx().setPeriodic(0, vertxHttpGatewayConnectorOptions.getConnectionRetryIntervalInMillis(), id -> {
             WebSocketConnectOptions options;
@@ -56,28 +54,20 @@ class VertxHttpGatewayConnectorMainVerticle extends AbstractVerticle {
             try {
                 WebSocket ws = Future.await(registerClient.connect(options));
 
-                MessageConsumer<Object> messageConsumerForStatusCheck = getVertx().eventBus().consumer(EVENT_BUS_STATUS_CHECK).handler(message -> {
-                    boolean isHealthy = (boolean) message.body();
-                    if (!isHealthy) {
-                        ws.close();
-                    } else {
-                        log.trace("connection is healthy");
-                    }
-                });
-
                 ws.closeHandler(unused -> {
+                    VertxHttpGatewayConnector.setConnectorHealthy(true, false);
                     if (timerId != null) {
                         getVertx().cancelTimer(timerId);
                     }
-                    messageConsumerForStatusCheck.unregister();
                     if (getVertx().deploymentIDs().contains(deploymentID())) {
                         log.debug("Trigger reconnection...");
-                        register(registerClient, options, vertxHttpGatewayConnectorHandler);
+                        getVertx().eventBus().send(RESTART_EVENT_BUS_ID, null);
                     }
                 });
 
                 getVertx().cancelTimer(id);
                 log.debug("Succeeded to register to vertx http gateway [{}:{}{}]!", options.getHost(), options.getPort(), options.getURI());
+                VertxHttpGatewayConnector.setConnectorHealthy(false, true);
                 promise.complete();
 
                 eventHandler.afterEstablishConnection(ws);
@@ -87,22 +77,22 @@ class VertxHttpGatewayConnectorMainVerticle extends AbstractVerticle {
                     if (timerId != null) {
                         getVertx().cancelTimer(timerId);
                     }
-                    getVertx().eventBus().send(EVENT_BUS_STATUS_CHECK, true);
+                    log.trace("Connector is healthy!");
+                    VertxHttpGatewayConnector.setConnectorHealthy(false, true);
                 });
 
-                getVertx().setPeriodic(0, 10000, l -> {
+                getVertx().setPeriodic(0, 6000, l -> {
                     log.trace("Send ping to server");
-
                     ws.writePing(Buffer.buffer("ping")).onSuccess(unused -> {
-                        timerId = getVertx().setTimer(5000, l2 -> {
-                            log.error("Failed to get pong from server within 5s");
-                            getVertx().eventBus().send(EVENT_BUS_STATUS_CHECK, false);
+                        timerId = getVertx().setTimer(3000, l2 -> {
                             getVertx().cancelTimer(l);
+                            log.error("Failed to get pong from server within 5s");
+                            ws.close();
                         });
                     }).onFailure(throwable -> {
-                        log.error("Failed to send ping to server", throwable);
-                        getVertx().eventBus().send(EVENT_BUS_STATUS_CHECK, false);
                         getVertx().cancelTimer(l);
+                        log.error("Failed to send ping to server", throwable);
+                        ws.close();
                     });
                 });
 
@@ -115,4 +105,9 @@ class VertxHttpGatewayConnectorMainVerticle extends AbstractVerticle {
     }
 
 
+    @Override
+    public void stop() throws Exception {
+        super.stop();
+        log.debug("{} undeploy", this);
+    }
 }
