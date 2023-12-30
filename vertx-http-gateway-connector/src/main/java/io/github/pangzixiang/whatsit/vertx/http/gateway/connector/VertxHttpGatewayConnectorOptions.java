@@ -38,7 +38,7 @@ public class VertxHttpGatewayConnectorOptions {
     }
 
     public VertxHttpGatewayConnectorOptions(String serviceName, int servicePort, String listenerServerHost, int listenerServerPort) {
-        this(serviceName, servicePort, listenerServerHost, listenerServerPort, "localhost", "/register", new WebSocketClientOptions(), DEFAULT_PROXY_CLIENT_OPTIONS, 2, TimeUnit.SECONDS.toMillis(15));
+        this(serviceName, servicePort, listenerServerHost, listenerServerPort, "localhost", "/register", new WebSocketClientOptions(), DEFAULT_PROXY_CLIENT_OPTIONS, 2, TimeUnit.SECONDS.toMillis(5));
     }
 
     public VertxHttpGatewayConnectorOptions setServiceHost(String serviceHost) {

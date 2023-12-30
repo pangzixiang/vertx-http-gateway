@@ -206,4 +206,10 @@ class VertxHttpGatewayConnectorHandler extends AbstractVerticle implements Handl
             }
         });
     }
+
+    @Override
+    public void stop() throws Exception {
+        super.stop();
+        log.debug("{} undeploy", this);
+    }
 }
