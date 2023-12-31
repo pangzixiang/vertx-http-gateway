@@ -46,6 +46,7 @@ public class VertxHttpGatewayContext {
                             .instanceId(serviceRegistrationInstance.getInstanceId())
                             .remoteAddress(serviceRegistrationInstance.getRemoteAddress())
                             .remotePort(Integer.parseInt(serviceRegistrationInstance.getRemotePort()))
+                            .connectTime(serviceRegistrationInstance.getConnectTime())
                             .build())
                     .toList();
             ConnectorServiceDetails details = ConnectorServiceDetails.builder()

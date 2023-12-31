@@ -1,5 +1,11 @@
 package io.github.pangzixiang.whatsit.vertx.http.gateway;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateDeserializer;
+import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
+import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateSerializer;
+import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import io.github.pangzixiang.whatsit.vertx.http.gateway.connector.ProxyRequestContext;
 import io.github.pangzixiang.whatsit.vertx.http.gateway.connector.VertxHttpGatewayConnector;
 import io.github.pangzixiang.whatsit.vertx.http.gateway.connector.VertxHttpGatewayConnectorOptions;
@@ -10,20 +16,38 @@ import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.*;
+import io.vertx.core.json.Json;
+import io.vertx.core.json.jackson.DatabindCodec;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class LocalDevTest {
     public static void main(String[] args) {
+        ObjectMapper objectMapper = DatabindCodec.mapper();
+        JavaTimeModule javaTimeModule = new JavaTimeModule();
+        LocalDateTimeSerializer localDateTimeSerializer = new LocalDateTimeSerializer(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+        LocalDateTimeDeserializer localDateTimeDeserializer = new LocalDateTimeDeserializer(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+        LocalDateSerializer localDateSerializer = new LocalDateSerializer(DateTimeFormatter.ISO_LOCAL_DATE);
+        LocalDateDeserializer localDateDeserializer = new LocalDateDeserializer(DateTimeFormatter.ISO_LOCAL_DATE);
+        javaTimeModule.addSerializer(LocalDateTime.class, localDateTimeSerializer);
+        javaTimeModule.addSerializer(LocalDate.class, localDateSerializer);
+        javaTimeModule.addDeserializer(LocalDateTime.class, localDateTimeDeserializer);
+        javaTimeModule.addDeserializer(LocalDate.class, localDateDeserializer);
+        objectMapper.registerModule(javaTimeModule);
+
         Vertx vertx = Vertx.vertx();
         VertxHttpGatewayOptions vertxHttpGatewayOptions = new VertxHttpGatewayOptions();
         Router customRouter = Router.router(vertx);
         customRouter.route("/test").handler(rc -> rc.response().end("test"));
+        customRouter.route("/connectors").handler(rc -> rc.response().end(Json.encode(VertxHttpGatewayContext.getInstance(vertx).getConnectorServiceDetails())));
         customRouter.route().failureHandler(rc -> {
            if (rc.statusCode() == 404) {
                rc.response().setStatusCode(rc.statusCode()).end("<h1>Oops! NOT FOUND!</h1>");
