@@ -14,6 +14,7 @@ class VertxHttpGatewayConnectorMainVerticle extends AbstractVerticle {
     private final EventHandler eventHandler;
 
     private WebSocketClient registerClient;
+    private WebSocket webSocket;
     private Long timerId;
 
     public VertxHttpGatewayConnectorMainVerticle(VertxHttpGatewayConnectorOptions vertxHttpGatewayConnectorOptions, EventHandler eventHandler) {
@@ -52,9 +53,9 @@ class VertxHttpGatewayConnectorMainVerticle extends AbstractVerticle {
                 return;
             }
             try {
-                WebSocket ws = Future.await(registerClient.connect(options));
+                this.webSocket = Future.await(registerClient.connect(options));
 
-                ws.closeHandler(unused -> {
+                this.webSocket.closeHandler(unused -> {
                     VertxHttpGatewayConnector.setConnectorHealthy(true, false);
                     if (timerId != null) {
                         getVertx().cancelTimer(timerId);
@@ -70,9 +71,9 @@ class VertxHttpGatewayConnectorMainVerticle extends AbstractVerticle {
                 VertxHttpGatewayConnector.setConnectorHealthy(false, true);
                 promise.complete();
 
-                eventHandler.afterEstablishConnection(ws);
+                eventHandler.afterEstablishConnection(this.webSocket);
 
-                ws.pongHandler(buffer -> {
+                this.webSocket.pongHandler(buffer -> {
                     log.trace("Received pong from server");
                     if (timerId != null) {
                         getVertx().cancelTimer(timerId);
@@ -83,20 +84,20 @@ class VertxHttpGatewayConnectorMainVerticle extends AbstractVerticle {
 
                 getVertx().setPeriodic(0, 6000, l -> {
                     log.trace("Send ping to server");
-                    ws.writePing(Buffer.buffer("ping")).onSuccess(unused -> {
+                    this.webSocket.writePing(Buffer.buffer("ping")).onSuccess(unused -> {
                         timerId = getVertx().setTimer(3000, l2 -> {
                             getVertx().cancelTimer(l);
                             log.error("Failed to get pong from server within 5s");
-                            ws.close();
+                            Future.await(this.webSocket.close());
                         });
                     }).onFailure(throwable -> {
                         getVertx().cancelTimer(l);
                         log.error("Failed to send ping to server", throwable);
-                        ws.close();
+                        Future.await(this.webSocket.close());
                     });
                 });
 
-                vertxHttpGatewayConnectorHandler.handle(ws);
+                vertxHttpGatewayConnectorHandler.handle(this.webSocket);
             } catch (Throwable throwable) {
                 log.debug("Failed to register to vertx http gateway [{}:{}{}]! (error={})", options.getHost(), options.getPort(), options.getURI(), throwable.getMessage());
             }
@@ -108,6 +109,12 @@ class VertxHttpGatewayConnectorMainVerticle extends AbstractVerticle {
     @Override
     public void stop() throws Exception {
         super.stop();
+        if (this.webSocket != null && !this.webSocket.isClosed()) {
+            this.webSocket.close()
+                    .onSuccess(unused -> log.debug("ws connection is closed"))
+                    .onFailure(throwable -> log.error("Failed to close ws connection", throwable));
+        }
+        this.timerId = null;
         log.debug("{} undeploy", this);
     }
 }
