@@ -12,9 +12,14 @@ import lombok.extern.slf4j.Slf4j;
 class ListenerServerVerticle extends AbstractVerticle {
     private final VertxHttpGatewayOptions vertxHttpGatewayOptions;
     private final EventHandler eventHandler;
+    private final Router customListenerRouter;
     @Override
     public void start() throws Exception {
         Router router = Router.router(getVertx());
+
+        if (customListenerRouter != null) {
+            router.route().subRouter(customListenerRouter);
+        }
 
         ListenerServerHandler listenerServerHandler = new ListenerServerHandler(eventHandler);
 

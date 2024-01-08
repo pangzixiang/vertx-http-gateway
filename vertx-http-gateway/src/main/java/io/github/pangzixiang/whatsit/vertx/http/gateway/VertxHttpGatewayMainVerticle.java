@@ -15,10 +15,13 @@ public class VertxHttpGatewayMainVerticle extends AbstractVerticle {
 
     private Router customRouter;
 
+    private Router customListenerRouter;
+
     public VertxHttpGatewayMainVerticle(VertxHttpGatewayOptions vertxHttpGatewayOptions) {
         this.vertxHttpGatewayOptions = vertxHttpGatewayOptions;
         this.eventHandler = new DefaultEventHandler();
         this.customRouter = null;
+        this.customListenerRouter = null;
     }
 
     public VertxHttpGatewayMainVerticle() {
@@ -35,9 +38,14 @@ public class VertxHttpGatewayMainVerticle extends AbstractVerticle {
         return this;
     }
 
+    public VertxHttpGatewayMainVerticle withCustomListenerRouter(Router customListenerRouter) {
+        this.customListenerRouter = customListenerRouter;
+        return this;
+    }
+
     @Override
     public void start(Promise<Void> startPromise) throws Exception {
-        Future<String> listenerServerFuture = getVertx().deployVerticle(() -> new ListenerServerVerticle(vertxHttpGatewayOptions, eventHandler),
+        Future<String> listenerServerFuture = getVertx().deployVerticle(() -> new ListenerServerVerticle(vertxHttpGatewayOptions, eventHandler, customListenerRouter),
                 new DeploymentOptions().setThreadingModel(ThreadingModel.VIRTUAL_THREAD).setInstances(vertxHttpGatewayOptions.getListenerServerInstance()));
 
         listenerServerFuture.compose(unused -> getVertx().deployVerticle(() -> new ProxyServerVerticle(vertxHttpGatewayOptions, eventHandler, customRouter),
