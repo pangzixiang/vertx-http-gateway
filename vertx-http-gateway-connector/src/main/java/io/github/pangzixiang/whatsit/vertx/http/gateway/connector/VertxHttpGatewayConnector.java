@@ -6,7 +6,9 @@ import io.vertx.core.*;
 import io.vertx.core.eventbus.MessageConsumer;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
@@ -24,7 +26,7 @@ public class VertxHttpGatewayConnector {
 
     private MessageConsumer<Object> closeMessageConsumer;
 
-    private static final AtomicBoolean isConnectorHealthy = new AtomicBoolean(false);
+    private static final Map<String, Boolean> connectorHealthyMap = new ConcurrentHashMap<>();
 
     public VertxHttpGatewayConnector(Vertx vertx, VertxHttpGatewayConnectorOptions vertxHttpGatewayConnectorOptions) {
         this.vertx = vertx;
@@ -49,11 +51,19 @@ public class VertxHttpGatewayConnector {
     }
 
     public static Boolean getConnectorHealthy() {
-        return isConnectorHealthy.get();
+        return !connectorHealthyMap.containsValue(false);
     }
 
-    static Boolean setConnectorHealthy(boolean expected, boolean newValue) {
-        return isConnectorHealthy.compareAndSet(expected, newValue);
+    static Boolean setConnectorHealthy(String connectorId, boolean value) {
+        synchronized (connectorHealthyMap) {
+            return connectorHealthyMap.put(connectorId, value);
+        }
+    }
+
+    static Boolean removeConnectorHealthy(String connectorId) {
+        synchronized (connectorHealthyMap) {
+            return connectorHealthyMap.remove(connectorId);
+        }
     }
 
     public Future<Void> connect() {

@@ -138,6 +138,11 @@ public class LocalDevClientTest {
                         }
 
                     });
+
+                    vertx.setPeriodic(0, 1000, l -> {
+                       log.debug(VertxHttpGatewayConnector.getConnectorHealthy().toString());
+                    });
+
                     vertxHttpGatewayConnector.connect();
 
 //                    vertx.setTimer(5000, l -> {

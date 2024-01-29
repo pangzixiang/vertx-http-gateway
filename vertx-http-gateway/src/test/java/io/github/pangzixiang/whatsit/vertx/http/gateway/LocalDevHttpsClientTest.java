@@ -7,6 +7,7 @@ import io.netty.handler.codec.http.HttpHeaderValues;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.http.HttpVersion;
 import io.vertx.core.http.WebSocketClientOptions;
 import io.vertx.ext.web.Router;
 import lombok.extern.slf4j.Slf4j;
@@ -48,7 +49,9 @@ public class LocalDevHttpsClientTest {
                             ;
                     VertxHttpGatewayConnectorOptions vertxHttpGatewayConnectorOptions =
                             new VertxHttpGatewayConnectorOptions("test-https", httpServer.actualPort(), "localhost", 9090)
-                                    .setRegisterClientOptions(registerClientOptions);
+                                    .setRegisterClientOptions(registerClientOptions)
+                                    .setProxyClientOptions(new HttpClientOptions().setProtocolVersion(HttpVersion.HTTP_2))
+                            ;
 
                     VertxHttpGatewayConnector vertxHttpGatewayConnector = new VertxHttpGatewayConnector(vertx, vertxHttpGatewayConnectorOptions);
                     vertxHttpGatewayConnector.connect();
