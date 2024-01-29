@@ -24,6 +24,7 @@ class VertxHttpGatewayConnectorMainVerticle extends AbstractVerticle {
 
     @Override
     public void start() throws Exception {
+        VertxHttpGatewayConnector.setConnectorHealthy(String.valueOf(hashCode()), false);
         registerClient = getVertx().createWebSocketClient(vertxHttpGatewayConnectorOptions.getRegisterClientOptions());
 
         WebSocketConnectOptions webSocketConnectOptions = new WebSocketConnectOptions();
@@ -56,7 +57,7 @@ class VertxHttpGatewayConnectorMainVerticle extends AbstractVerticle {
                 this.webSocket = Future.await(registerClient.connect(options));
 
                 this.webSocket.closeHandler(unused -> {
-                    VertxHttpGatewayConnector.setConnectorHealthy(true, false);
+                    VertxHttpGatewayConnector.setConnectorHealthy(String.valueOf(hashCode()), false);
                     if (timerId != null) {
                         getVertx().cancelTimer(timerId);
                     }
@@ -68,7 +69,7 @@ class VertxHttpGatewayConnectorMainVerticle extends AbstractVerticle {
 
                 getVertx().cancelTimer(id);
                 log.debug("Succeeded to register to vertx http gateway [{}:{}{}]!", options.getHost(), options.getPort(), options.getURI());
-                VertxHttpGatewayConnector.setConnectorHealthy(false, true);
+                VertxHttpGatewayConnector.setConnectorHealthy(String.valueOf(hashCode()), true);
                 promise.complete();
 
                 eventHandler.afterEstablishConnection(this.webSocket);
@@ -79,7 +80,7 @@ class VertxHttpGatewayConnectorMainVerticle extends AbstractVerticle {
                         getVertx().cancelTimer(timerId);
                     }
                     log.trace("Connector is healthy!");
-                    VertxHttpGatewayConnector.setConnectorHealthy(false, true);
+                    VertxHttpGatewayConnector.setConnectorHealthy(String.valueOf(hashCode()), true);
                 });
 
                 getVertx().setPeriodic(0, 6000, l -> {
@@ -109,6 +110,7 @@ class VertxHttpGatewayConnectorMainVerticle extends AbstractVerticle {
     @Override
     public void stop() throws Exception {
         super.stop();
+        VertxHttpGatewayConnector.removeConnectorHealthy(String.valueOf(hashCode()));
         if (this.webSocket != null && !this.webSocket.isClosed()) {
             this.webSocket.close()
                     .onSuccess(unused -> log.debug("ws connection is closed"))
