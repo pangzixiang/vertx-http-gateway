@@ -126,12 +126,14 @@ class ProxyServerHandler extends AbstractVerticle implements Handler<RoutingCont
                 String responseInfoChunkBody = messageChunk.getChunkBody().toString();
                 ResponseMessageInfoChunkBody responseMessageInfoChunkBody = new ResponseMessageInfoChunkBody(responseInfoChunkBody);
                 routingContext.response().setStatusCode(responseMessageInfoChunkBody.getStatusCode()).setStatusMessage(responseMessageInfoChunkBody.getStatusMessage());
-                // set response headers
-                routingContext.response().headers().addAll(responseMessageInfoChunkBody.getHeaders());
 
-                if (Objects.equals(responseMessageInfoChunkBody.getHeaders().get(HttpHeaderNames.TRANSFER_ENCODING), HttpHeaderValues.CHUNKED.toString())) {
+                if (routingContext.request().version().equals(HttpVersion.HTTP_1_1) &&
+                        Objects.equals(responseMessageInfoChunkBody.getHeaders().get(HttpHeaderNames.TRANSFER_ENCODING), HttpHeaderValues.CHUNKED.toString())) {
                     routingContext.response().setChunked(true);
                 }
+
+                // set response headers
+                routingContext.response().headers().addAll(responseMessageInfoChunkBody.getHeaders().remove(HttpHeaderNames.TRANSFER_ENCODING));
             }
 
             if (Objects.equals(chunkType, MessageChunkType.BODY.getFlag())) {
