@@ -11,13 +11,19 @@ public class LocalDevHttpsTest {
         Vertx vertx = Vertx.vertx();
         SelfSignedCertificate selfSignedCertificate = SelfSignedCertificate.create();
         HttpServerOptions sslOptions = new HttpServerOptions()
-                .setUseAlpn(true)
                 .setSsl(true)
                 .setKeyCertOptions(selfSignedCertificate.keyCertOptions())
                 .setTrustOptions(selfSignedCertificate.trustOptions());
+
+        HttpServerOptions sslOptions2 = new HttpServerOptions()
+                .setSsl(true)
+                .setKeyCertOptions(selfSignedCertificate.keyCertOptions())
+                .setTrustOptions(selfSignedCertificate.trustOptions())
+                .setUseAlpn(true)
+                .setLogActivity(true);
         VertxHttpGatewayOptions vertxHttpGatewayOptions = new VertxHttpGatewayOptions()
-                .setProxyServerOptions(sslOptions)
                 .setListenerServerOptions(sslOptions)
+                .setProxyServerOptions(sslOptions2)
                 ;
 
         vertx.deployVerticle(new VertxHttpGatewayMainVerticle(vertxHttpGatewayOptions));
