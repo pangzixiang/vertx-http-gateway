@@ -129,7 +129,7 @@ class VertxHttpGatewayConnectorHandler extends AbstractVerticle implements Handl
     private String buildFirstResponseChunkBody(HttpClientResponse httpClientResponse) {
         String statusMessage = httpClientResponse.statusMessage();
         int statusCode = httpClientResponse.statusCode();
-        MultiMap responseHeaders = httpClientResponse.headers();
+        MultiMap responseHeaders = Future.await(eventHandler.processProxyResponseHeaders(httpClientResponse.headers()));
         return ResponseMessageInfoChunkBody.build(httpClientResponse.version(), statusMessage, statusCode, responseHeaders);
     }
 

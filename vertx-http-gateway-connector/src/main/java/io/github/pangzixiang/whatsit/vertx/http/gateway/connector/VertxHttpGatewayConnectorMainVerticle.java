@@ -4,7 +4,11 @@ import io.github.pangzixiang.whatsit.vertx.http.gateway.connector.handler.EventH
 import io.vertx.core.*;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.*;
+import io.vertx.ext.healthchecks.HealthChecks;
+import io.vertx.ext.healthchecks.Status;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.github.pangzixiang.whatsit.vertx.http.gateway.connector.VertxHttpGatewayConnector.RESTART_EVENT_BUS_ID;
 
@@ -16,15 +20,18 @@ class VertxHttpGatewayConnectorMainVerticle extends AbstractVerticle {
     private WebSocketClient registerClient;
     private WebSocket webSocket;
     private Long timerId;
+    private final HealthChecks healthChecks;
+    private final AtomicBoolean isHealthy = new AtomicBoolean(false);
 
-    public VertxHttpGatewayConnectorMainVerticle(VertxHttpGatewayConnectorOptions vertxHttpGatewayConnectorOptions, EventHandler eventHandler) {
+    public VertxHttpGatewayConnectorMainVerticle(VertxHttpGatewayConnectorOptions vertxHttpGatewayConnectorOptions, EventHandler eventHandler, HealthChecks healthChecks) {
         this.vertxHttpGatewayConnectorOptions = vertxHttpGatewayConnectorOptions;
         this.eventHandler = eventHandler;
+        this.healthChecks = healthChecks;
+        this.healthChecks.register("connector-%s".formatted(hashCode()), promise -> promise.complete(isHealthy.get() ? Status.OK() : Status.KO()));
     }
 
     @Override
     public void start() throws Exception {
-        VertxHttpGatewayConnector.setConnectorHealthy(String.valueOf(hashCode()), false);
         registerClient = getVertx().createWebSocketClient(vertxHttpGatewayConnectorOptions.getRegisterClientOptions());
 
         WebSocketConnectOptions webSocketConnectOptions = new WebSocketConnectOptions();
@@ -57,7 +64,7 @@ class VertxHttpGatewayConnectorMainVerticle extends AbstractVerticle {
                 this.webSocket = Future.await(registerClient.connect(options));
 
                 this.webSocket.closeHandler(unused -> {
-                    VertxHttpGatewayConnector.setConnectorHealthy(String.valueOf(hashCode()), false);
+                    this.isHealthy.compareAndSet(true, false);
                     if (timerId != null) {
                         getVertx().cancelTimer(timerId);
                     }
@@ -69,7 +76,7 @@ class VertxHttpGatewayConnectorMainVerticle extends AbstractVerticle {
 
                 getVertx().cancelTimer(id);
                 log.debug("Succeeded to register to vertx http gateway [{}:{}{}]!", options.getHost(), options.getPort(), options.getURI());
-                VertxHttpGatewayConnector.setConnectorHealthy(String.valueOf(hashCode()), true);
+                this.isHealthy.compareAndSet(false, true);
                 promise.complete();
 
                 eventHandler.afterEstablishConnection(this.webSocket);
@@ -80,7 +87,7 @@ class VertxHttpGatewayConnectorMainVerticle extends AbstractVerticle {
                         getVertx().cancelTimer(timerId);
                     }
                     log.trace("Connector is healthy!");
-                    VertxHttpGatewayConnector.setConnectorHealthy(String.valueOf(hashCode()), true);
+                    this.isHealthy.compareAndSet(false, true);
                 });
 
                 getVertx().setPeriodic(0, 6000, l -> {
@@ -110,7 +117,7 @@ class VertxHttpGatewayConnectorMainVerticle extends AbstractVerticle {
     @Override
     public void stop() throws Exception {
         super.stop();
-        VertxHttpGatewayConnector.removeConnectorHealthy(String.valueOf(hashCode()));
+        this.healthChecks.unregister("connector-%s".formatted(hashCode()));
         if (this.webSocket != null && !this.webSocket.isClosed()) {
             this.webSocket.close()
                     .onSuccess(unused -> log.debug("ws connection is closed"))

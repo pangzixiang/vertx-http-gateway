@@ -4,6 +4,7 @@ import io.github.pangzixiang.whatsit.vertx.http.gateway.connector.handler.Defaul
 import io.github.pangzixiang.whatsit.vertx.http.gateway.connector.handler.EventHandler;
 import io.vertx.core.*;
 import io.vertx.core.eventbus.MessageConsumer;
+import io.vertx.ext.healthchecks.HealthChecks;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
@@ -24,14 +25,15 @@ public class VertxHttpGatewayConnector {
 
     private final AtomicBoolean isReconnection = new AtomicBoolean(false);
 
-    private MessageConsumer<Object> closeMessageConsumer;
+    private final HealthChecks healthChecks;
 
-    private static final Map<String, Boolean> connectorHealthyMap = new ConcurrentHashMap<>();
+    private MessageConsumer<Object> closeMessageConsumer;
 
     public VertxHttpGatewayConnector(Vertx vertx, VertxHttpGatewayConnectorOptions vertxHttpGatewayConnectorOptions) {
         this.vertx = vertx;
         this.vertxHttpGatewayConnectorOptions = vertxHttpGatewayConnectorOptions;
         this.eventHandler = new DefaultEventHandler();
+        this.healthChecks = HealthChecks.create(vertx);
         vertx.eventBus().consumer(RESTART_EVENT_BUS_ID).handler(msg -> {
             if (isReconnection.compareAndSet(false, true)) {
                 this.close().compose(unused -> this.connect()).onComplete(result -> {
@@ -39,6 +41,7 @@ public class VertxHttpGatewayConnector {
                        log.info("Connector restart successfully!");
                    } else {
                        log.info("Connector restart failed", result.cause());
+                       vertx.eventBus().send(RESTART_EVENT_BUS_ID, null);
                    }
                 });
             }
@@ -50,25 +53,13 @@ public class VertxHttpGatewayConnector {
         return this;
     }
 
-    public static Boolean getConnectorHealthy() {
-        return !connectorHealthyMap.containsValue(false);
-    }
-
-    static Boolean setConnectorHealthy(String connectorId, boolean value) {
-        synchronized (connectorHealthyMap) {
-            return connectorHealthyMap.put(connectorId, value);
-        }
-    }
-
-    static Boolean removeConnectorHealthy(String connectorId) {
-        synchronized (connectorHealthyMap) {
-            return connectorHealthyMap.remove(connectorId);
-        }
+    public final HealthChecks getHealthChecks() {
+        return this.healthChecks;
     }
 
     public Future<Void> connect() {
         Promise<Void> promise = Promise.promise();
-        vertx.deployVerticle(() -> new VertxHttpGatewayConnectorMainVerticle(vertxHttpGatewayConnectorOptions, eventHandler), new DeploymentOptions().setThreadingModel(ThreadingModel.VIRTUAL_THREAD).setInstances(vertxHttpGatewayConnectorOptions.getInstance())).onSuccess(id -> {
+        vertx.deployVerticle(() -> new VertxHttpGatewayConnectorMainVerticle(vertxHttpGatewayConnectorOptions, eventHandler, healthChecks), new DeploymentOptions().setThreadingModel(ThreadingModel.VIRTUAL_THREAD).setInstances(vertxHttpGatewayConnectorOptions.getInstance())).onSuccess(id -> {
             this.closeMessageConsumer = vertx.eventBus().consumer(CLOSE_EVENT_BUS_ID).handler(message -> {
                 eventHandler.beforeDisconnect();
                 vertx.undeploy(id).onComplete(result -> {

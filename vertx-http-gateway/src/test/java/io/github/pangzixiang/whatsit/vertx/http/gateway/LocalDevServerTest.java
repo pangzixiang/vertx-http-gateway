@@ -13,6 +13,7 @@ import io.github.pangzixiang.whatsit.vertx.http.gateway.handler.EventHandler;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaderValues;
 import io.vertx.core.Future;
+import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.*;
@@ -49,46 +50,51 @@ public class LocalDevServerTest {
         customRouter.route("/test").handler(rc -> rc.response().end("test"));
         customRouter.route("/connectors").handler(rc -> rc.response().end(Json.encode(VertxHttpGatewayContext.getInstance(vertx).getConnectorServiceDetails())));
         customRouter.route().failureHandler(rc -> {
-           if (rc.statusCode() == 404) {
-               rc.response().setStatusCode(rc.statusCode()).end("<h1>Oops! NOT FOUND!</h1>");
-           } else {
-               rc.next();
-           }
+            if (rc.statusCode() == 404) {
+                rc.response().setStatusCode(rc.statusCode()).end("<h1>Oops! NOT FOUND!</h1>");
+            } else {
+                rc.next();
+            }
         });
         vertx.deployVerticle(new VertxHttpGatewayMainVerticle(vertxHttpGatewayOptions)
                 .withCustomRouter(customRouter)
                 .withEventHandler(new EventHandler() {
-            @Override
-            public Future<Void> beforeEstablishConnection(RoutingContext routingContext) {
-                log.info("beforeEstablishConnection");
-                return Future.succeededFuture();
-            }
+                    @Override
+                    public Future<Void> beforeEstablishConnection(RoutingContext routingContext) {
+                        log.info("beforeEstablishConnection");
+                        return Future.succeededFuture();
+                    }
 
-            @Override
-            public void afterEstablishConnection(String serviceName, ServiceRegistrationInstance serviceRegistrationInstance) {
-                log.info("afterEstablishConnection");
-            }
+                    @Override
+                    public void afterEstablishConnection(String serviceName, ServiceRegistrationInstance serviceRegistrationInstance) {
+                        log.info("afterEstablishConnection");
+                    }
 
-            @Override
-            public void beforeRemoveConnection(String serviceName, ServiceRegistrationInstance serviceRegistrationInstance) {
-                log.info("beforeRemoveConnection");
-            }
+                    @Override
+                    public void beforeRemoveConnection(String serviceName, ServiceRegistrationInstance serviceRegistrationInstance) {
+                        log.info("beforeRemoveConnection");
+                    }
 
-            @Override
-            public void afterRemoveConnection(String serviceName, ServiceRegistrationInstance serviceRegistrationInstance) {
-                log.info("afterRemoveConnection");
-            }
+                    @Override
+                    public void afterRemoveConnection(String serviceName, ServiceRegistrationInstance serviceRegistrationInstance) {
+                        log.info("afterRemoveConnection");
+                    }
 
-            @Override
-            public Future<Void> beforeProxyRequest(long requestId, HttpServerRequest httpServerRequest, ServiceRegistrationInstance serviceRegistrationInstance) {
-                log.info("beforeProxyRequest");
-                return Future.succeededFuture();
-            }
+                    @Override
+                    public Future<Void> beforeProxyRequest(long requestId, HttpServerRequest httpServerRequest, ServiceRegistrationInstance serviceRegistrationInstance) {
+                        log.info("beforeProxyRequest");
+                        return Future.succeededFuture();
+                    }
 
-            @Override
-            public void afterProxyRequest(long requestId, HttpServerRequest httpServerRequest, ServiceRegistrationInstance serviceRegistrationInstance) {
-                log.info("afterProxyRequest");
-            }
-        })).onSuccess(s -> log.info("Succeeded to start Http vertx gateway")).onFailure(throwable -> log.error("Failed to start vertx http gateway", throwable));
+                    @Override
+                    public Future<MultiMap> processProxyResponseHeaders(MultiMap responseHeaders) {
+                        return Future.succeededFuture(responseHeaders.add("test2", "test2"));
+                    }
+
+                    @Override
+                    public void afterProxyRequest(long requestId, HttpServerRequest httpServerRequest, ServiceRegistrationInstance serviceRegistrationInstance) {
+                        log.info("afterProxyRequest");
+                    }
+                })).onSuccess(s -> log.info("Succeeded to start Http vertx gateway")).onFailure(throwable -> log.error("Failed to start vertx http gateway", throwable));
     }
 }

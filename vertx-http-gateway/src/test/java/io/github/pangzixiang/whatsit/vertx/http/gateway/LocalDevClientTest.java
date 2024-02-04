@@ -13,6 +13,7 @@ import io.github.pangzixiang.whatsit.vertx.http.gateway.handler.EventHandler;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaderValues;
 import io.vertx.core.Future;
+import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerRequest;
@@ -133,6 +134,11 @@ public class LocalDevClientTest {
                         }
 
                         @Override
+                        public Future<MultiMap> processProxyResponseHeaders(MultiMap responseHeaders) {
+                            return Future.succeededFuture(responseHeaders.add("test", "test"));
+                        }
+
+                        @Override
                         public void afterProxyRequest(ProxyRequestContext proxyRequestContext) {
                             log.info("afterProxyRequest {}",proxyRequestContext.getHttpClientResponse().headers());
                         }
@@ -140,7 +146,9 @@ public class LocalDevClientTest {
                     });
 
                     vertx.setPeriodic(0, 1000, l -> {
-                       log.debug(VertxHttpGatewayConnector.getConnectorHealthy().toString());
+                        vertxHttpGatewayConnector.getHealthChecks().checkStatus().onSuccess(result -> {
+                            log.info(String.valueOf(result.getUp()));
+                        }).onFailure(throwable -> log.error(throwable.getMessage(), throwable));
                     });
 
                     vertxHttpGatewayConnector.connect();

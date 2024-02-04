@@ -2,6 +2,7 @@ package io.github.pangzixiang.whatsit.vertx.http.gateway.handler;
 
 import io.github.pangzixiang.whatsit.vertx.http.gateway.ServiceRegistrationInstance;
 import io.vertx.core.Future;
+import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.ext.web.RoutingContext;
 
@@ -23,6 +24,11 @@ public class DefaultEventHandler implements EventHandler {
     @Override
     public Future<Void> beforeProxyRequest(long requestId, HttpServerRequest httpServerRequest, ServiceRegistrationInstance serviceRegistrationInstance) {
         return Future.succeededFuture();
+    }
+
+    @Override
+    public Future<MultiMap> processProxyResponseHeaders(MultiMap responseHeaders) {
+        return Future.succeededFuture(responseHeaders);
     }
 
     @Override
