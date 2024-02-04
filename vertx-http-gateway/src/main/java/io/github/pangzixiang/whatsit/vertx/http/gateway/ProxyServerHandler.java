@@ -132,8 +132,9 @@ class ProxyServerHandler extends AbstractVerticle implements Handler<RoutingCont
                     routingContext.response().setChunked(true);
                 }
 
+                MultiMap finalResponseHeaders = Future.await(eventHandler.processProxyResponseHeaders(responseMessageInfoChunkBody.getHeaders().remove(HttpHeaderNames.TRANSFER_ENCODING)));
                 // set response headers
-                routingContext.response().headers().addAll(responseMessageInfoChunkBody.getHeaders().remove(HttpHeaderNames.TRANSFER_ENCODING));
+                routingContext.response().headers().addAll(finalResponseHeaders);
             }
 
             if (Objects.equals(chunkType, MessageChunkType.BODY.getFlag())) {
