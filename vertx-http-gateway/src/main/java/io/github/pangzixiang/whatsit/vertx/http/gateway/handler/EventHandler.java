@@ -2,6 +2,7 @@ package io.github.pangzixiang.whatsit.vertx.http.gateway.handler;
 
 import io.github.pangzixiang.whatsit.vertx.http.gateway.ServiceRegistrationInstance;
 import io.vertx.core.Future;
+import io.vertx.core.MultiMap;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.ext.web.RoutingContext;
 
@@ -56,6 +57,14 @@ public interface EventHandler {
      *
      */
     Future<Void> beforeProxyRequest(long requestId, HttpServerRequest httpServerRequest, ServiceRegistrationInstance serviceRegistrationInstance);
+
+    /**
+     * Change the proxy response headers
+     *
+     * @param responseHeaders the response headers
+     * @return the changed response headers
+     */
+    Future<MultiMap> processProxyResponseHeaders(MultiMap responseHeaders);
 
     /**
      * After proxy request future.
