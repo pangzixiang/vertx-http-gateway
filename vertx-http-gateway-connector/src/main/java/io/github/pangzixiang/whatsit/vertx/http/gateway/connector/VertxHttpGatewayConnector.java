@@ -7,9 +7,7 @@ import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.ext.healthchecks.HealthChecks;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
@@ -30,19 +28,23 @@ public class VertxHttpGatewayConnector {
     private MessageConsumer<Object> closeMessageConsumer;
 
     public VertxHttpGatewayConnector(Vertx vertx, VertxHttpGatewayConnectorOptions vertxHttpGatewayConnectorOptions) {
+        this(vertx, vertxHttpGatewayConnectorOptions, HealthChecks.create(vertx));
+    }
+
+    public VertxHttpGatewayConnector(Vertx vertx, VertxHttpGatewayConnectorOptions vertxHttpGatewayConnectorOptions, HealthChecks healthChecks) {
         this.vertx = vertx;
         this.vertxHttpGatewayConnectorOptions = vertxHttpGatewayConnectorOptions;
         this.eventHandler = new DefaultEventHandler();
-        this.healthChecks = HealthChecks.create(vertx);
+        this.healthChecks = healthChecks;
         vertx.eventBus().consumer(RESTART_EVENT_BUS_ID).handler(msg -> {
             if (isReconnection.compareAndSet(false, true)) {
                 this.close().compose(unused -> this.connect()).onComplete(result -> {
-                   if (result.succeeded() && isReconnection.compareAndSet(true, false)) {
-                       log.info("Connector restart successfully!");
-                   } else {
-                       log.info("Connector restart failed", result.cause());
-                       vertx.eventBus().send(RESTART_EVENT_BUS_ID, null);
-                   }
+                    if (result.succeeded() && isReconnection.compareAndSet(true, false)) {
+                        log.info("Connector restart successfully!");
+                    } else {
+                        log.info("Connector restart failed", result.cause());
+                        vertx.eventBus().send(RESTART_EVENT_BUS_ID, null);
+                    }
                 });
             }
         }).completionHandler(unused -> log.debug("Succeeded to register restart event bus [{}]", RESTART_EVENT_BUS_ID));
