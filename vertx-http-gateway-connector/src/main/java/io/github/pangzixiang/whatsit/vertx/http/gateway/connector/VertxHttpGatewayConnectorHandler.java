@@ -37,7 +37,7 @@ class VertxHttpGatewayConnectorHandler extends AbstractVerticle implements Handl
     @Override
     public void start() throws Exception {
         proxyClient = getVertx().createHttpClient(vertxHttpGatewayConnectorOptions.getProxyClientOptions());
-        WebSocketClientOptions webSocketClientOptions = new WebSocketClientOptions(vertxHttpGatewayConnectorOptions.getRegisterClientOptions());
+        WebSocketClientOptions webSocketClientOptions = new WebSocketClientOptions(vertxHttpGatewayConnectorOptions.getWebsocketProxyClientOptions());
         webSocketProxyClient = getVertx().createWebSocketClient(webSocketClientOptions);
     }
 

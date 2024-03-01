@@ -1,7 +1,9 @@
 package io.github.pangzixiang.whatsit.vertx.http.gateway.connector;
 
 import io.vertx.core.http.HttpClientOptions;
+import io.vertx.core.http.WebSocketClient;
 import io.vertx.core.http.WebSocketClientOptions;
+import io.vertx.core.http.WebSocketConnectOptions;
 import lombok.Getter;
 
 import java.util.concurrent.TimeUnit;
@@ -17,13 +19,14 @@ public class VertxHttpGatewayConnectorOptions {
     private String listenerServerRegisterPath;
     private WebSocketClientOptions registerClientOptions;
     private HttpClientOptions proxyClientOptions;
+    private WebSocketClientOptions websocketProxyClientOptions;
     private int instance;
     private long connectionRetryIntervalInMillis;
     private Function<String, String> basePathConvert;
 
     private static final HttpClientOptions DEFAULT_PROXY_CLIENT_OPTIONS = new HttpClientOptions();
 
-    public VertxHttpGatewayConnectorOptions(String serviceName, int servicePort, String listenerServerHost, int listenerServerPort, String serviceHost, String listenerServerRegisterPath, WebSocketClientOptions registerClientOptions, HttpClientOptions proxyClientOptions, int instance, long connectionRetryIntervalInMillis) {
+    public VertxHttpGatewayConnectorOptions(String serviceName, int servicePort, String listenerServerHost, int listenerServerPort, String serviceHost, String listenerServerRegisterPath, WebSocketClientOptions registerClientOptions, HttpClientOptions proxyClientOptions, WebSocketClientOptions websocketProxyClientOptions, int instance, long connectionRetryIntervalInMillis) {
         this.serviceName = serviceName;
         this.servicePort = servicePort;
         this.listenerServerHost = listenerServerHost;
@@ -32,13 +35,14 @@ public class VertxHttpGatewayConnectorOptions {
         this.listenerServerRegisterPath = listenerServerRegisterPath;
         this.registerClientOptions = registerClientOptions;
         this.proxyClientOptions = proxyClientOptions;
+        this.websocketProxyClientOptions = websocketProxyClientOptions;
         this.instance = instance;
         this.connectionRetryIntervalInMillis = connectionRetryIntervalInMillis;
         this.basePathConvert = basePath -> basePath;
     }
 
     public VertxHttpGatewayConnectorOptions(String serviceName, int servicePort, String listenerServerHost, int listenerServerPort) {
-        this(serviceName, servicePort, listenerServerHost, listenerServerPort, "localhost", "/register", new WebSocketClientOptions(), DEFAULT_PROXY_CLIENT_OPTIONS, 2, TimeUnit.SECONDS.toMillis(5));
+        this(serviceName, servicePort, listenerServerHost, listenerServerPort, "localhost", "/register", new WebSocketClientOptions(), DEFAULT_PROXY_CLIENT_OPTIONS, new WebSocketClientOptions(), 2, TimeUnit.SECONDS.toMillis(5));
     }
 
     public VertxHttpGatewayConnectorOptions setServiceHost(String serviceHost) {
@@ -53,6 +57,11 @@ public class VertxHttpGatewayConnectorOptions {
 
     public VertxHttpGatewayConnectorOptions setProxyClientOptions(HttpClientOptions proxyClientOptions) {
         this.proxyClientOptions = proxyClientOptions;
+        return this;
+    }
+
+    public VertxHttpGatewayConnectorOptions setWebsocketProxyClientOptions(WebSocketClientOptions websocketProxyClientOptions) {
+        this.websocketProxyClientOptions = websocketProxyClientOptions;
         return this;
     }
 
