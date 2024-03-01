@@ -1,4 +1,4 @@
-package io.github.pangzixiang.whatsit.vertx.http.gateway;
+package io.github.pangzixiang.whatsit.vertx.http.gateway.dev;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;

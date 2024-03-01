@@ -1,4 +1,4 @@
-package io.github.pangzixiang.whatsit.vertx.http.gateway;
+package io.github.pangzixiang.whatsit.vertx.http.gateway.dev;
 
 import io.github.pangzixiang.whatsit.vertx.http.gateway.connector.VertxHttpGatewayConnector;
 import io.github.pangzixiang.whatsit.vertx.http.gateway.connector.VertxHttpGatewayConnectorOptions;
