@@ -9,6 +9,7 @@ import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.http.HttpVersion;
 import io.vertx.core.http.WebSocketClientOptions;
+import io.vertx.core.net.JksOptions;
 import io.vertx.ext.web.Router;
 import lombok.extern.slf4j.Slf4j;
 
@@ -45,6 +46,7 @@ public class LocalDevHttpsClientTest {
                 .onSuccess(httpServer -> {
                     log.info("Succeeded to start test server in port {}", httpServer.actualPort());
                     WebSocketClientOptions registerClientOptions = new WebSocketClientOptions()
+                            .setKeyCertOptions(new JksOptions().setValue(vertx.fileSystem().readFileBlocking("vertx-gateway-client.truststore")).setPassword("testtest"))
                             .setSsl(true).setTrustAll(true)
                             ;
                     VertxHttpGatewayConnectorOptions vertxHttpGatewayConnectorOptions =

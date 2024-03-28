@@ -145,11 +145,11 @@ public class LocalDevClientTest {
 
                     });
 
-                    vertx.setPeriodic(0, 1000, l -> {
-                        vertxHttpGatewayConnector.getHealthChecks().checkStatus().onSuccess(result -> {
-                            log.info(String.valueOf(result.getUp()));
-                        }).onFailure(throwable -> log.error(throwable.getMessage(), throwable));
-                    });
+//                    vertx.setPeriodic(0, 1000, l -> {
+//                        vertxHttpGatewayConnector.getHealthChecks().checkStatus().onSuccess(result -> {
+//                            log.info(String.valueOf(result.getUp()));
+//                        }).onFailure(throwable -> log.error(throwable.getMessage(), throwable));
+//                    });
 
                     vertxHttpGatewayConnector.connect();
 
