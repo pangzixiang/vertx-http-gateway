@@ -14,11 +14,16 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 @Slf4j
 @AllArgsConstructor
 class ListenerServerHandler extends AbstractVerticle implements Handler<RoutingContext> {
 
     private final EventHandler eventHandler;
+
+    private static final Map<String, Long> pingPongTimer = new ConcurrentHashMap<>();
 
     @Override
     public void handle(RoutingContext routingContext) {
@@ -48,6 +53,30 @@ class ListenerServerHandler extends AbstractVerticle implements Handler<RoutingC
             }
 
             eventHandler.afterEstablishConnection(serviceName, serviceRegistrationInstance);
+
+            serverWebSocket.pongHandler(buffer -> {
+                log.trace("Received pong from connector {}", instance);
+                Long timerId = pingPongTimer.remove(instance);
+                if (timerId != null) {
+                    getVertx().cancelTimer(timerId);
+                }
+            });
+
+            getVertx().setPeriodic(0, 6000, l -> {
+                log.trace("Send ping to connector {}", instance);
+                serverWebSocket.writePing(Buffer.buffer("ping")).onSuccess(unused -> {
+                    long timerId = getVertx().setTimer(3000, l2 -> {
+                        getVertx().cancelTimer(l);
+                        log.error("Failed to get pong from connector {} within 5s", instance);
+                        Future.await(serverWebSocket.close());
+                    });
+                    pingPongTimer.put(instance, timerId);
+                }).onFailure(throwable -> {
+                    getVertx().cancelTimer(l);
+                    log.error("Failed to send ping to connector {}", instance, throwable);
+                    Future.await(serverWebSocket.close());
+                });
+            });
 
             serverWebSocket.handler(buffer -> {
                 MessageChunk messageChunk = new MessageChunk(buffer);

@@ -222,19 +222,3 @@ public class Main {
 ```shell
 npm i vertx-http-gateway-js-connector
 ```
-```javascript
-const Connector = require("vertx-http-gateway-js-connector")
-const connector = new Connector({
-    listenerHost : "localhost",
-    listenerPort : 9090,
-    listenerSsl : false,
-    serviceName : "js-service",
-    servicePort : server.address().port,
-    serviceHost : "localhost",
-    serviceSsl : false,
-    instanceNum : 4
-})
-connector.connect();
-
-setTimeout(() => connector.disconnect(), 5000)
-```
