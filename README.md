@@ -222,3 +222,8 @@ public class Main {
 ```shell
 npm i vertx-http-gateway-js-connector
 ```
+
+- Target service (Rust) to use [vertx-http-gateway-rust-connector](https://github.com/pangzixiang/vertx-http-gateway-rust-connector) to connect with Gateway
+```shell
+cargo add vertx-http-gateway-rust-connector
+```
