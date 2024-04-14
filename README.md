@@ -1,6 +1,7 @@
 # vertx-http-gateway
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.pangzixiang.whatsit/vertx-http-gateway?logo=apachemaven&logoColor=red)](https://search.maven.org/artifact/io.github.pangzixiang.whatsit/vertx-http-gateway)
 [![NPM](https://img.shields.io/npm/v/vertx-http-gateway-js-connector?label=vertx-http-gateway-js-connector&logo=npm&logoColor=red)](https://www.npmjs.com/package/vertx-http-gateway-js-connector)
+[![CRATES](https://img.shields.io/crates/v/vertx-http-gateway-rust-connector?label=vertx-http-gateway-js-connector&logoColor=red)](https://crates.io/crates/vertx-http-gateway-rust-connector)
 ### How does it work?
 ![ConnectionFlow](./ConnectionFlow.jpg)
 - Once requester send the request to Gateway, Gateway would transfer the request to the Connector via Websocket.
