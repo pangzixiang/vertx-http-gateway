@@ -5,7 +5,7 @@ import lombok.experimental.UtilityClass;
 
 @UtilityClass
 class Utils {
-    static final String lineSeparator = "\n";
+    static final String lineSeparator = "\r\n";
     static HttpVersion httpVersionParser(String alpnName) {
         for (HttpVersion httpVersion: HttpVersion.values()) {
             if (httpVersion.alpnName().equals(alpnName)) {
