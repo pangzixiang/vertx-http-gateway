@@ -1,13 +1,20 @@
 package io.github.pangzixiang.whatsit.vertx.http.gateway.connector;
 
 import io.github.pangzixiang.whatsit.vertx.http.gateway.connector.handler.EventHandler;
-import io.vertx.core.*;
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.DeploymentOptions;
+import io.vertx.core.Future;
+import io.vertx.core.Promise;
+import io.vertx.core.ThreadingModel;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.http.*;
+import io.vertx.core.http.WebSocket;
+import io.vertx.core.http.WebSocketClient;
+import io.vertx.core.http.WebSocketConnectOptions;
 import io.vertx.ext.healthchecks.HealthChecks;
 import io.vertx.ext.healthchecks.Status;
 import lombok.extern.slf4j.Slf4j;
 
+import java.net.URI;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.github.pangzixiang.whatsit.vertx.http.gateway.connector.VertxHttpGatewayConnector.RESTART_EVENT_BUS_ID;
@@ -16,6 +23,7 @@ import static io.github.pangzixiang.whatsit.vertx.http.gateway.connector.VertxHt
 class VertxHttpGatewayConnectorMainVerticle extends AbstractVerticle {
     private final VertxHttpGatewayConnectorOptions vertxHttpGatewayConnectorOptions;
     private final EventHandler eventHandler;
+    private final URI registerURI;
 
     private WebSocketClient registerClient;
     private WebSocket webSocket;
@@ -23,10 +31,11 @@ class VertxHttpGatewayConnectorMainVerticle extends AbstractVerticle {
     private final HealthChecks healthChecks;
     private final AtomicBoolean isHealthy = new AtomicBoolean(false);
 
-    public VertxHttpGatewayConnectorMainVerticle(VertxHttpGatewayConnectorOptions vertxHttpGatewayConnectorOptions, EventHandler eventHandler, HealthChecks healthChecks) {
+    public VertxHttpGatewayConnectorMainVerticle(VertxHttpGatewayConnectorOptions vertxHttpGatewayConnectorOptions, URI registerURI, EventHandler eventHandler, HealthChecks healthChecks) {
         this.vertxHttpGatewayConnectorOptions = vertxHttpGatewayConnectorOptions;
         this.eventHandler = eventHandler;
         this.healthChecks = healthChecks;
+        this.registerURI = registerURI;
         this.healthChecks.register("connector-%s".formatted(hashCode()), promise -> promise.complete(isHealthy.get() ? Status.OK() : Status.KO()));
     }
 
@@ -35,9 +44,9 @@ class VertxHttpGatewayConnectorMainVerticle extends AbstractVerticle {
         registerClient = getVertx().createWebSocketClient(vertxHttpGatewayConnectorOptions.getRegisterClientOptions());
 
         WebSocketConnectOptions webSocketConnectOptions = new WebSocketConnectOptions();
-        webSocketConnectOptions.setHost(vertxHttpGatewayConnectorOptions.getListenerServerHost());
-        webSocketConnectOptions.setPort(vertxHttpGatewayConnectorOptions.getListenerServerPort());
-        webSocketConnectOptions.setURI(vertxHttpGatewayConnectorOptions.getListenerServerRegisterPath() + "?serviceName=%s&servicePort=%s&instance=%s".formatted(vertxHttpGatewayConnectorOptions.getServiceName(), vertxHttpGatewayConnectorOptions.getServicePort(), hashCode()));
+        webSocketConnectOptions.setHost(registerURI.getHost());
+        webSocketConnectOptions.setPort(registerURI.getPort());
+        webSocketConnectOptions.setURI(registerURI.getPath() + "?serviceName=%s&servicePort=%s&instance=%s".formatted(vertxHttpGatewayConnectorOptions.getServiceName(), vertxHttpGatewayConnectorOptions.getServicePort(), hashCode()));
 
         VertxHttpGatewayConnectorHandler vertxHttpGatewayConnectorHandler = new VertxHttpGatewayConnectorHandler(vertxHttpGatewayConnectorOptions, String.valueOf(hashCode()), eventHandler);
 

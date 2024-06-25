@@ -2,11 +2,18 @@ package io.github.pangzixiang.whatsit.vertx.http.gateway.connector;
 
 import io.github.pangzixiang.whatsit.vertx.http.gateway.connector.handler.DefaultEventHandler;
 import io.github.pangzixiang.whatsit.vertx.http.gateway.connector.handler.EventHandler;
-import io.vertx.core.*;
+import io.vertx.core.DeploymentOptions;
+import io.vertx.core.Future;
+import io.vertx.core.Promise;
+import io.vertx.core.ThreadingModel;
+import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.ext.healthchecks.HealthChecks;
 import lombok.extern.slf4j.Slf4j;
 
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -60,8 +67,14 @@ public class VertxHttpGatewayConnector {
     }
 
     public Future<Void> connect() {
+        List<Future<Void>> startFutures = new ArrayList<>();
+        vertxHttpGatewayConnectorOptions.getRegisterURIs().forEach(registerURI -> startFutures.add(startConnectorVerticle(registerURI)));
+        return Future.all(startFutures).mapEmpty();
+    }
+
+    private Future<Void> startConnectorVerticle(URI registerURI) {
         Promise<Void> promise = Promise.promise();
-        vertx.deployVerticle(() -> new VertxHttpGatewayConnectorMainVerticle(vertxHttpGatewayConnectorOptions, eventHandler, healthChecks), new DeploymentOptions().setThreadingModel(ThreadingModel.VIRTUAL_THREAD).setInstances(vertxHttpGatewayConnectorOptions.getInstance())).onSuccess(id -> {
+        vertx.deployVerticle(() -> new VertxHttpGatewayConnectorMainVerticle(vertxHttpGatewayConnectorOptions, registerURI, eventHandler, healthChecks), new DeploymentOptions().setThreadingModel(ThreadingModel.VIRTUAL_THREAD).setInstances(vertxHttpGatewayConnectorOptions.getInstance())).onSuccess(id -> {
             this.closeMessageConsumer = vertx.eventBus().consumer(CLOSE_EVENT_BUS_ID).handler(message -> {
                 eventHandler.beforeDisconnect();
                 vertx.undeploy(id).onComplete(result -> {

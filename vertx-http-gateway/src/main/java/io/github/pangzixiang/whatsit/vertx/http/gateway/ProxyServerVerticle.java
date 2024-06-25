@@ -1,7 +1,10 @@
 package io.github.pangzixiang.whatsit.vertx.http.gateway;
 
 import io.github.pangzixiang.whatsit.vertx.http.gateway.handler.EventHandler;
-import io.vertx.core.*;
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.DeploymentOptions;
+import io.vertx.core.Future;
+import io.vertx.core.ThreadingModel;
 import io.vertx.core.http.HttpServer;
 import io.vertx.ext.web.Router;
 import lombok.AllArgsConstructor;
