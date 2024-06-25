@@ -26,7 +26,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 @Slf4j
-public class LocalDevServerTest {
+public class LocalDevServer2Test {
     public static void main(String[] args) {
         ObjectMapper objectMapper = DatabindCodec.mapper();
         JavaTimeModule javaTimeModule = new JavaTimeModule();
@@ -42,6 +42,8 @@ public class LocalDevServerTest {
 
         Vertx vertx = Vertx.vertx();
         VertxHttpGatewayOptions vertxHttpGatewayOptions = new VertxHttpGatewayOptions();
+        vertxHttpGatewayOptions.setProxyServerPort(9999);
+        vertxHttpGatewayOptions.setListenerServerPort(9095);
         Router customRouter = Router.router(vertx);
         customRouter.route("/test").handler(rc -> rc.response().end("test"));
         customRouter.route("/connectors").handler(rc -> rc.response().end(Json.encode(VertxHttpGatewayContext.getInstance(vertx).getConnectorServiceDetails())));
