@@ -36,7 +36,7 @@
         <slf4j.version>2.1.0-alpha1</slf4j.version>
         <lombok.version>1.18.30</lombok.version>
         <bouncycastle.version>1.77</bouncycastle.version>
-        <jackson.version>2.17.0</jackson.version>
+        <jackson.version>2.17.1</jackson.version>
 
         <maven-scm-plugin.version>2.0.1</maven-scm-plugin.version>
         <maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>
